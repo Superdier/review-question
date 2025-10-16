@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+    <head>
+        <meta charset="UTF-8" />
+        <title>入力 - 文法練習</title>
+        <style>
+        body {
+            font-family: sans-serif;
+            margin: 30px;
+            background: #fafafa;
+        }
+
+        textarea,
+        [contenteditable="true"] {
+            width: 100%;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            background: #fff;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        textarea {
+            height: 200px;
+        }
+
+        button {
+            margin: 3px;
+            padding: 4px 10px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .multi-select-highlight {
+            background-color: #fff8b9;
+            /* Màu vàng để highlight */
+        }
+
+        #multiSelectToggle.active {
+            background-color: #a0d2ff;
+            /* Màu xanh khi chế độ được bật */
+            border-color: #6b9ac4;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+        padding: 15px;
+        /* Thêm z-index để đảm bảo modal luôn ở trên cùng */
+        z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+        /* Thay đổi để responsive */
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        box-sizing: border-box;
+        /* Thêm flex để cố định footer */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex-grow: 1;
+      }
+
+      .modal-footer {
+        padding: 10px 20px;
+        border-top: 1px solid #eee;
+        text-align: right;
+        flex-shrink: 0;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            margin: 5px 0;
+            padding: 5px;
+        }
+    </style>
+    </head>
+
+    <body>
+        <h2>📘 Thêm câu hỏi mới</h2>
+
+        <div id="add-question-area"
+            style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <div>
+                <label><input type="radio" name="questionType" value="single"
+                        onchange="toggleInputType(this.value)" checked> Câu hỏi
+                    đơn</label>
+                <label style="margin-left: 15px;"><input type="radio"
+                        name="questionType" value="passage"
+                        onchange="toggleInputType(this.value)"> Bài đọc (nhiều
+                    câu
+                    hỏi)</label>
+            </div>
+
+            <!-- Form cho câu hỏi đơn -->
+            <div id="single-question-form" style="margin-top: 15px;">
+                <div id="toolbarMulti" style="margin-bottom: 5px">
+                    <button id="multiSelectToggle"
+                        onclick="toggleMultiSelectMode(this)">✨
+                        Chọn nhiều</button>
+                    <button onclick="formatMulti('bold')"><b>B</b></button>
+                    <button onclick="formatMulti('underline')"><u>U</u></button>
+                    <button
+                        onclick="formatMulti('strikeThrough')"><s>S</s></button>
+                    <button onclick="clearFormatMulti()">🧹 Clear</button>
+                </div>
+                <div id="quick" contenteditable="true"
+                    placeholder="Dán nhiều câu hỏi đơn có 正解 / 不正解..."
+                    style="min-height: 200px; white-space: pre-wrap"></div>
+                <br />
+                <button onclick="quickParse()">⚙️ Phân tích & Lưu câu hỏi
+                    đơn</button>
+                <button type="button" onclick="clearSingleInput()">🗑️ Xóa nội
+                    dung</button>
+            </div>
+
+            <!-- Form cho bài đọc -->
+            <div id="passage-form" style="display: none; margin-top: 15px;">
+                <label for="passage-text"><b>Nội dung bài đọc:</b></label>
+                <div id="passage-text" contenteditable="true"
+                    placeholder="Dán nội dung bài đọc vào đây..."
+                    style="min-height: 150px; white-space: pre-wrap"></div>
+                <br>
+                <label for="passage-sub-questions"><b>Các câu hỏi cho bài
+                        đọc:</b></label>
+                <!-- Thêm thanh công cụ định dạng cho câu hỏi của bài đọc -->
+                <div id="toolbarPassage" style="margin-bottom: 5px">
+                    <button id="multiSelectTogglePassage"
+                        onclick="toggleMultiSelectMode(this, 'passage-sub-questions')">✨
+                        Chọn nhiều</button>
+                    <button
+                        onclick="formatMulti('bold', 'passage-sub-questions')"><b>B</b></button>
+                    <button
+                        onclick="formatMulti('underline', 'passage-sub-questions')"><u>U</u></button>
+                    <button
+                        onclick="formatMulti('strikeThrough', 'passage-sub-questions')"><s>S</s></button>
+                    <button
+                        onclick="clearFormatMulti('passage-sub-questions')">🧹
+                        Clear</button>
+                </div>
+                <div id="passage-sub-questions" contenteditable="true"
+                    placeholder="Dán các câu hỏi con (1. 2. ...) vào đây..."
+                    style="min-height: 150px; white-space: pre-wrap"></div>
+                <br />
+                <button onclick="savePassage()">⚙️ Lưu bài đọc & các câu
+                    hỏi</button>
+                <button type="button" onclick="clearPassageInput()">🗑️ Xóa nội
+                    dung</button>
+            </div>
+        </div>
+        <a href="./review.html">👉 Sang trang ôn tập</a>
+
+        <h2>📋 Danh sách câu hỏi</h2>
+        <input type="text" id="searchInput" oninput="render()"
+            placeholder="Tìm kiếm trong câu hỏi..."
+            style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box;">
+        <button onclick="exportJSON()">💾 Xuất dữ liệu</button>
+        <button onclick="clearAll()">🗑 Xóa toàn bộ</button>
+        <table id="tbl">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Câu hỏi</th>
+                    <th>正解</th>
+                    <th>Thống kê (Đúng/Lần làm)</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="modal" id="editModal">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h3>✏️ Sửa câu hỏi</h3>
+                    <label>Câu hỏi:</label>
+                    <div id="editQ" contenteditable="true" style="
+              border: 1px solid #ccc;
+              padding: 8px;
+              min-height: 60px;
+              background: #fff;
+              white-space: pre-wrap;
+            "></div>
+
+                    <div style="margin-top: 6px">
+                        <button type="button"
+                            onclick="formatEdit('bold')"><b>B</b></button>
+                        <button type="button" onclick="formatEdit('underline')">
+                            <u>U</u>
+                        </button>
+                        <button type="button"
+                            onclick="formatEdit('strikeThrough')">
+                            <s>S</s>
+                        </button>
+                        <button type="button" onclick="clearFormatEdit()">🧹
+                            Clear</button>
+                    </div>
+
+                    <label>Đáp án 1:</label><input type="text" id="editC1" />
+                    <label>Đáp án 2:</label><input type="text" id="editC2" />
+                    <label>Đáp án 3:</label><input type="text" id="editC3" />
+                    <label>Đáp án 4:</label><input type="text" id="editC4" />
+                    <label>Đúng (1-4):</label><input type="number"
+                        id="editCorrect"
+                        min="1" max="4" />
+                    <label for="editExplanation">Giải thích (Tham khảo):</label>
+                    <textarea id="editExplanation" rows="4"
+                        style="width: 100%; margin-top: 5px;"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="saveEdit()">💾 Lưu</button>
+                    <button onclick="closeModal()">✖ Đóng</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal sửa BÀI ĐỌC -->
+        <div class="modal" id="passageEditModal">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-body">
+                    <h3>✏️ Sửa bài đọc</h3>
+
+                    <label for="passageEditText"><b>Nội dung bài
+                            đọc:</b></label>
+                    <div id="passageEditText" contenteditable="true"
+                        style="min-height: 150px; white-space: pre-wrap"></div>
+                    <br>
+
+                    <label for="passageEditSubQuestions"><b>Các câu hỏi cho bài
+                            đọc:</b></label>
+                    <div id="toolbarPassageEdit" style="margin-bottom: 5px">
+                        <button
+                            onclick="toggleMultiSelectMode(this, 'passageEditSubQuestions')">✨
+                            Chọn nhiều</button>
+                        <button
+                            onclick="formatMulti('bold', 'passageEditSubQuestions')"><b>B</b></button>
+                        <button
+                            onclick="formatMulti('underline', 'passageEditSubQuestions')"><u>U</u></button>
+                        <button
+                            onclick="formatMulti('strikeThrough', 'passageEditSubQuestions')"><s>S</s></button>
+                        <button
+                            onclick="clearFormatMulti('passageEditSubQuestions')">🧹
+                            Clear</button>
+                    </div>
+                    <div id="passageEditSubQuestions" contenteditable="true"
+                        style="min-height: 200px; white-space: pre-wrap"></div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="savePassageEdit()">💾 Lưu thay đổi</button>
+                    <button onclick="closePassageModal()">✖ Đóng</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal" id="dupModal">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h3>⚠️ Câu hỏi trùng lặp</h3>
+                    <p>Chọn những câu bạn muốn <b>ghi đè</b>:</p>
+                    <div id="dupList"
+                        style="margin-top:8px; border:1px solid #ccc; padding:6px; background:#fafafa;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="confirmDup()">✅ Xác nhận</button>
+                    <button onclick="closeDup()">✖ Đóng</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal xem trước bài đọc -->
+        <div class="modal" id="passagePreviewModal">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-body">
+                    <h3>🔍 Xem trước bài đọc & câu hỏi</h3>
+                    <h4>Nội dung bài đọc:</h4>
+                    <div id="previewPassageContent"
+                        style="background: #f9f9f9; border: 1px solid #eee; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                    </div>
+
+                    <h4 style="margin-top: 20px;">Các câu hỏi đã phân tích:</h4>
+                    <div id="previewSubQuestionsList"></div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="confirmSavePassage()">✅ Xác nhận &
+                        Lưu</button>
+                    <button onclick="closePassagePreviewModal()">✖ Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <script
+            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+        <script
+            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+        <script>
+        // 1. Cấu hình Firebase của bạn - THAY THẾ CHỖ NÀY!
+        const firebaseConfig = {
+            apiKey: "AIzaSyBe50FKA_JjkyYBvb1qzCacnOsyLNVjaLk",
+            authDomain: "review-a3790.firebaseapp.com",
+            projectId: "review-a3790",
+            storageBucket: "review-a3790.firebasestorage.app",
+            messagingSenderId: "130813969585",
+            appId: "1:130813969585:web:783a138ecb19d3c2cd8e90",
+            measurementId: "G-R8PY6X3DKN"
+        };
+
+        // 2. Khởi tạo Firebase và Firestore
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const questionsCollection = db.collection("questions");
+        const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp;
+    </script>
+
+        <script>
+        let questions = []; // Dữ liệu sẽ được tải từ Firebase
+        let editIndex = -1;
+        let isMultiSelectMode = false;
+
+        // Tải dữ liệu từ Firestore
+        async function loadQuestions() {
+            try {
+                // Tải câu hỏi, sắp xếp theo timestamp mới nhất lên đầu
+                const snapshot = await questionsCollection.orderBy("timestamp", "desc").get();
+                questions = snapshot.docs.map(doc => ({
+                    id: doc.id, // Lưu ID của document để thao tác sửa/xóa
+                    ...doc.data()
+                }));
+                render();
+            } catch (error) {
+                console.error("Lỗi khi tải câu hỏi:", error);
+                alert("Lỗi khi tải câu hỏi. Kiểm tra console.");
+            }
+        }
+
+        function render() {
+            const searchTerm = document.getElementById("searchInput")?.value.toLowerCase() || "";
+            const tbody = document.querySelector("#tbl tbody");
+            tbody.innerHTML = "";
+
+            const filteredQuestions = questions.filter(q => {
+                // Tìm kiếm trên nội dung text của câu hỏi, không bao gồm HTML
+                if (!q) return false;
+                let contentToSearch = "";
+                if (q.type === 'passage') {
+                    // Đối với bài đọc, tìm kiếm trong nội dung bài đọc
+                    contentToSearch = q.passage || "";
+                } else {
+                    // Đối với câu hỏi đơn, tìm kiếm trong nội dung câu hỏi
+                    contentToSearch = q.question || "";
+                }
+                return contentToSearch.replace(/<[^>]+>/g, "").toLowerCase().includes(searchTerm);
+            });
+
+            // Tách thành 2 nhóm
+            const passages = filteredQuestions.filter(q => q.type === 'passage');
+            const singles = filteredQuestions.filter(q => q.type !== 'passage');
+
+            // Hiển thị nhóm Bài đọc
+            if (passages.length > 0) {
+                const headerRow = tbody.insertRow();
+                headerRow.innerHTML = `<th colspan="5" style="background-color: #eef; text-align: left;">📚 Bài đọc (${passages.length})</th>`;
+                passages.forEach((q, index) => renderRow(q, index));
+            }
+
+            // Hiển thị nhóm Câu hỏi đơn
+            if (singles.length > 0) {
+                const headerRow = tbody.insertRow();
+                headerRow.innerHTML = `<th colspan="5" style="background-color: #eff; text-align: left;">📝 Câu hỏi đơn (${singles.length})</th>`;
+                singles.forEach((q, index) => renderRow(q, index));
+            }
+
+            // Hàm phụ để render một dòng
+            function renderRow(q, displayIndex) {
+                // Tìm index gốc của câu hỏi trong mảng `questions` để các hàm sửa/xóa hoạt động đúng
+                const originalIndex = questions.findIndex(originalQ => originalQ.id === q.id);
+                if (originalIndex === -1) return; // Bỏ qua nếu không tìm thấy
+
+                const tr = document.createElement("tr");
+                if (q.type === 'passage' && q.sub_questions) {
+                    const totalAttemptedSubQuestions = (q.attempts || 0) * (q.totalSubQuestions || q.sub_questions.length);
+                    tr.innerHTML = `
+                        <td>${displayIndex + 1}</td>
+                        <td>
+                            <div style="font-weight: bold; color: #005a9e;">[BÀI ĐỌC]</div>
+                            <div>${q.passage.substring(0, 150)}... (${q.sub_questions.length} câu hỏi)</div>
+                        </td>
+                        <td>-</td>
+                        <td style="text-align: center;">${q.correctAttempts || 0}/${totalAttemptedSubQuestions}</td>
+                        <td><button onclick="openEdit(${originalIndex})">Sửa</button><button onclick="del(${originalIndex})">Xóa</button></td>`;
+                } else { // Mặc định là câu hỏi đơn
+                    tr.innerHTML = `
+                        <td>${displayIndex + 1}</td>
+                        <td>${q.question}</td>
+                        <td>${q.choices[q.correct] || ""}</td>
+                        <td style="text-align: center;">${q.correctAttempts || 0}/${q.attempts || 0}</td>
+                        <td><button onclick="openEdit(${originalIndex})">Sửa</button><button onclick="del(${originalIndex})">Xóa</button></td>`;
+                }
+                tbody.appendChild(tr);
+            }
+        }
+
+        let tempDup = []; // lưu danh sách trùng tạm
+        let tempPassageData = null; // Dữ liệu bài đọc tạm thời cho việc xem trước
+
+        // 🔹 Hàm tái sử dụng để phân tích câu hỏi từ HTML
+        function parseQuestionsFromHTML(html) {
+            const questions = [];
+            if (!html) return questions;
+
+            const safeHTML = html
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+
+            const allLines = safeHTML
+                .replace(/<div>/g, "\n")
+                .replace(/<\/div>/g, "")
+                .split("\n")
+                .map(x => x.trim())
+                .filter(x => x); // Loại bỏ các dòng trống
+
+            let questionBlocks = [];
+            let tempBlock = [];
+
+            // Tách các câu hỏi thành các khối dựa trên số thứ tự ở đầu dòng
+            allLines.forEach(line => {
+                // Sửa logic: Tìm dòng BẮT ĐẦU bằng "số."
+                if (/^\s*\d+\.\s/.test(line) && tempBlock.length > 0) {
+                    questionBlocks.push(tempBlock);
+                    tempBlock = [line];
+                } else {
+                    tempBlock.push(line);
+                }
+            });
+            if (tempBlock.length > 0) {
+                questionBlocks.push(tempBlock);
+            }
+
+            questionBlocks.forEach(block => {
+                if (block.length < 2) return;
+
+                // Dòng đầu tiên luôn là câu hỏi
+                let questionHTML = block[0].replace(/^\d+\.?\s*/, "").trim();
+                const choices = [];
+                let correct = -1;
+                let explanation = ""; // Thêm biến để lưu giải thích
+
+                block.slice(1).forEach(line => {
+                    // Tìm các lựa chọn: "1) Nội dung"
+                    // Sửa logic: Tìm số thứ tự lựa chọn ngay cả khi có "正解:" đứng trước
+                    const choiceMatch = line.match(/(\d+)\)\s*(.*)/);
+                    if (choiceMatch) {
+                        const index = parseInt(choiceMatch[1]) - 1;
+                        // Lấy nội dung và loại bỏ các tag "正解", "不正解" nếu có
+                        const choiceText = choiceMatch[2].trim();
+                        if (index >= 0) {
+                            choices[index] = choiceText;
+                        }
+                    }
+
+                    // Tìm đáp án đúng từ dòng "正解: 1)" hoặc "1) 正解: Nội dung"
+                    const correctLineMatch = line.match(/正解[:：]?\s*(\d+)/);
+                    if (correctLineMatch) {
+                        correct = parseInt(correctLineMatch[1]) - 1;
+                    }
+
+                    // Xử lý trường hợp "正解" nằm trong dòng lựa chọn
+                    const correctInChoiceMatch = line.match(/^\s*(\d+)\)\s*正解/);
+                    if (correctInChoiceMatch) {
+                        correct = parseInt(correctInChoiceMatch[1]) - 1;
+                    }
+
+                    // Tìm dòng giải thích
+                    const explanationMatch = line.match(/^Tham khảo[:：]\s*(.*)/);
+                    if (explanationMatch) {
+                        explanation = explanationMatch[1].trim();
+                    }
+                });
+                
+                if (choices.length >= 2 && correct !== -1) {
+                    questions.push({ question: questionHTML, choices, correct, explanation });
+                }
+            });
+ 
+            return questions;
+        }
+
+        // 🔹 Phân tích nhiều câu hỏi (Đã sửa để dùng Firestore)
+        async function quickParse() {
+            const html = document.getElementById("quick").innerHTML.trim();
+            if (!html) return alert("Hãy dán nội dung!");
+
+            const safeHTML = html
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+
+            const parsed = parseQuestionsFromHTML(safeHTML);
+            const newQuestions = parsed.map(q => ({ ...q, type: 'single', attempts: 0, correctAttempts: 0 }));
+
+            if (newQuestions.length === 0) {
+                alert("⚠️ Không phân tích được câu hỏi nào!");
+                return;
+            }
+
+            const current = questions; // Dùng biến questions đã load từ Firestore
+            const duplicates = [];
+            const unique = [];
+
+            for (const nq of newQuestions) {
+                const dup = current.find(q =>
+                    // Chỉ so sánh nếu q là câu hỏi đơn và có thuộc tính 'question'
+                    q.type !== 'passage' && q.question &&
+                    q.question.replace(/<[^>]+>/g, "").trim() === nq.question.replace(/<[^>]+>/g, "").trim()
+                );
+                if (dup) {
+                    duplicates.push({ ...nq, oldId: dup.id }); // Lưu cả ID cũ để ghi đè
+                }
+                else {
+                    unique.push(nq);
+                }
+            }
+
+            if (duplicates.length > 0) {
+                tempDup = { duplicates, unique }; // Không cần current vì đã có ID
+                const list = document.getElementById("dupList");
+                list.innerHTML = duplicates.map((q, i) => `
+            <div style="margin-bottom:8px; background:#fff; padding:6px; border-radius:4px;">
+              <label>
+                <input type="checkbox" checked id="dup_${i}" />
+                <span>${q.question}</span>
+              </label>
+            </div>
+          `).join("");
+                document.getElementById("dupModal").style.display = "flex";
+            } else {
+                // Lưu tất cả câu hỏi mới vào Firestore
+                await Promise.all(unique.map(q => questionsCollection.add({
+                    ...q,
+                    timestamp: serverTimestamp()
+                    // attempts và correctAttempts đã được thêm ở trên
+                })));
+                await loadQuestions(); // Tải lại danh sách
+                alert(`✅ Đã thêm ${unique.length} câu hỏi (giữ định dạng HTML).`);
+            }
+        }
+
+        async function confirmDup() {
+            const { duplicates, unique } = tempDup;
+            const selected = [];
+            const newUnique = [];
+            let updatedCount = 0;
+            let addedCount = 0;
+
+            // 1. Xử lý các câu hỏi trùng lặp được chọn để ghi đè (UPDATE)
+            const updatePromises = [];
+            duplicates.forEach((q, i) => {
+                const cb = document.getElementById(`dup_${i}`);
+                if (cb && cb.checked) {
+                    // Ghi đè câu hỏi cũ bằng dữ liệu mới, dùng ID cũ (q.oldId)
+                    updatePromises.push(questionsCollection.doc(q.oldId).update({
+                        question: q.question,
+                        choices: q.choices,
+                        correct: q.correct,
+                        timestamp: serverTimestamp()
+                        // Không reset attempts khi ghi đè, chỉ cập nhật nội dung
+                    }));
+                    updatedCount++;
+                }
+            });
+
+            // 2. Xử lý các câu hỏi hoàn toàn mới (ADD)
+            const addPromises = unique.map(q => {
+                addedCount++;
+                return questionsCollection.add({
+                    ...q,
+                    timestamp: serverTimestamp()
+                });
+            });
+
+            await Promise.all([...updatePromises, ...addPromises]);
+            await loadQuestions(); // Tải lại danh sách
+
+            closeDup();
+
+            alert(`✅ Đã hoàn thành. Đã ghi đè ${updatedCount} câu hỏi và thêm ${addedCount} câu hỏi mới.`);
+        }
+
+        // 🔹 Lưu bài đọc
+        async function savePassage() {
+            const passageHTML = document.getElementById("passage-text").innerHTML.trim();
+            const subQuestionsHTML = document.getElementById("passage-sub-questions").innerHTML.trim();
+
+            if (!passageHTML) return alert("Vui lòng nhập nội dung bài đọc.");
+            if (!subQuestionsHTML) return alert("Vui lòng nhập các câu hỏi cho bài đọc.");
+
+            const sub_questions = parseQuestionsFromHTML(subQuestionsHTML);
+
+            if (sub_questions.length === 0) {
+                return alert("Không phân tích được câu hỏi con nào. Vui lòng kiểm tra định dạng.");
+            }
+
+            // Lưu dữ liệu tạm thời để xác nhận
+            tempPassageData = {
+                type: 'passage',
+                passage: passageHTML,
+                sub_questions: sub_questions,
+                attempts: 0,
+                correctAttempts: 0,
+                totalSubQuestions: sub_questions.length, // Thêm tổng số câu hỏi con
+            };
+
+            // Hiển thị modal xem trước
+            populateAndShowPreviewModal();
+        }
+
+        async function confirmSavePassage() {
+            if (!tempPassageData) return;
+
+            const passageData = {
+                ...tempPassageData,
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                await questionsCollection.add(passageData);
+                alert(`✅ Đã lưu bài đọc với ${passageData.sub_questions.length} câu hỏi thành công!`);
+                document.getElementById("passage-text").innerHTML = "";
+                document.getElementById("passage-sub-questions").innerHTML = "";
+                closePassagePreviewModal();
+                await loadQuestions();
+            } catch (error) {
+                console.error("Lỗi khi lưu bài đọc:", error);
+                alert("Đã xảy ra lỗi khi lưu bài đọc. Vui lòng kiểm tra console.");
+            }
+        }
+
+        function populateAndShowPreviewModal() {
+            if (!tempPassageData) return;
+
+            document.getElementById('previewPassageContent').innerHTML = tempPassageData.passage;
+
+            const previewList = document.getElementById('previewSubQuestionsList');
+            previewList.innerHTML = tempPassageData.sub_questions.map((sq, index) => `
+                <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                    <p><b>Câu hỏi ${index + 1}:</b> ${sq.question}</p>
+                    <ul>
+                        ${sq.choices.map((choice, cIndex) => `
+                            <li style="${cIndex === sq.correct ? 'font-weight: bold; color: green;' : ''}">
+                                ${cIndex + 1}) ${choice} ${cIndex === sq.correct ? '<b>(Đáp án đúng)</b>' : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                    ${sq.explanation ? `<div style="margin-top: 8px; padding: 5px; background-color: #f0f0f0; border-radius: 3px;"><b>Giải thích:</b> ${sq.explanation}</div>` : ''}
+                </div>
+            `).join('');
+
+            document.getElementById('passagePreviewModal').style.display = 'flex';
+        }
+
+        function closeDup() {
+            document.getElementById("dupModal").style.display = "none";
+            tempDup = [];
+        }
+
+        // 🔹 Chỉnh sửa (Đã sửa để dùng Firestore)
+        function openEdit(i) {
+            editIndex = i;
+            const q = questions[i];
+ 
+            if (q.type === 'passage') {
+                document.getElementById("passageEditText").innerHTML = q.passage;
+                document.getElementById("passageEditSubQuestions").innerHTML = formatSubQuestionsForEditing(q.sub_questions);
+                document.getElementById("passageEditModal").style.display = "flex";
+            } else {
+                document.getElementById("editQ").innerHTML = q.question;
+                document.getElementById("editC1").value = q.choices[0] || "";
+                document.getElementById("editC2").value = q.choices[1] || "";
+                document.getElementById("editC3").value = q.choices[2] || "";
+                document.getElementById("editC4").value = q.choices[3] || "";
+                document.getElementById("editCorrect").value = q.correct + 1;
+                document.getElementById("editExplanation").value = q.explanation || ""; // Hiển thị giải thích cũ
+                document.getElementById("editModal").style.display = "flex";
+            }
+        }
+
+        // Helper để format câu hỏi con cho việc sửa
+        function formatSubQuestionsForEditing(subQuestions) {
+            if (!subQuestions) return "";
+            return subQuestions.map((sq, index) => {
+                const choicesStr = sq.choices.map((choice, cIndex) => `${cIndex + 1}) ${choice}`).join('\n');
+                const correctStr = `正解: ${sq.correct + 1}`;
+                const explanationStr = sq.explanation ? `\nTham khảo: ${sq.explanation}` : '';
+                return `${index + 1}. ${sq.question}\n${choicesStr}\n${correctStr}${explanationStr}`;
+            }).join('\n\n'); // Thêm dòng trống giữa các câu hỏi
+        }
+
+        // Lưu chỉnh sửa cho BÀI ĐỌC
+        async function savePassageEdit() {
+            const q = questions[editIndex];
+            const passageHTML = document.getElementById("passageEditText").innerHTML.trim();
+            const subQuestionsHTML = document.getElementById("passageEditSubQuestions").innerHTML.trim();
+
+            if (!passageHTML || !subQuestionsHTML) {
+                return alert("Nội dung bài đọc và câu hỏi không được để trống.");
+            }
+
+            const sub_questions = parseQuestionsFromHTML(subQuestionsHTML);
+            if (sub_questions.length === 0) {
+                return alert("Không phân tích được câu hỏi con nào. Vui lòng kiểm tra lại định dạng.");
+            }
+
+            const updatedData = {
+                passage: passageHTML,
+                sub_questions: sub_questions,
+                totalSubQuestions: sub_questions.length, // Cập nhật lại tổng số câu hỏi con
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                await questionsCollection.doc(q.id).update(updatedData);
+                closePassageModal();
+                await loadQuestions();
+            } catch (error) {
+                console.error("Lỗi khi lưu bài đọc:", error);
+                alert("Lỗi khi lưu bài đọc. Kiểm tra console.");
+            }
+        }
+ 
+        async function saveEdit() {
+            const q = questions[editIndex];
+            
+            if (q.type === 'passage') {
+                alert("Chức năng sửa bài đọc chưa được hỗ trợ trong phiên bản này.");
+                return;
+            }
+
+            const updatedData = {
+                question: document.getElementById("editQ").innerHTML,
+                choices: [
+                    document.getElementById("editC1").value,
+                    document.getElementById("editC2").value,
+                    document.getElementById("editC3").value,
+                    document.getElementById("editC4").value,
+                ],
+                correct: parseInt(document.getElementById("editCorrect").value) - 1,
+                explanation: document.getElementById("editExplanation").value.trim(), // Lưu giải thích mới
+                // Cập nhật lại timestamp
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                // Cập nhật document bằng ID đã lưu (q.id)
+                await questionsCollection.doc(q.id).update(updatedData);
+                closeModal();
+                await loadQuestions(); // Tải lại để cập nhật hiển thị
+            } catch (error) {
+                console.error("Lỗi khi lưu chỉnh sửa:", error);
+                alert("Lỗi khi lưu chỉnh sửa. Kiểm tra console.");
+            }
+        }
+
+        // Xóa (Đã sửa để dùng Firestore)
+        async function del(i) {
+            if (confirm("Xóa câu hỏi này?")) {
+                try {
+                    const questionId = questions[i].id;
+                    await questionsCollection.doc(questionId).delete();
+                    await loadQuestions(); // Tải lại danh sách
+                } catch (error) {
+                    console.error("Lỗi khi xóa câu hỏi:", error);
+                    alert("Lỗi khi xóa câu hỏi. Kiểm tra console.");
+                }
+            }
+        }
+
+        function closeModal() {
+            document.getElementById("editModal").style.display = "none";
+        }
+
+        function closePassageModal() {
+            document.getElementById("passageEditModal").style.display = "none";
+        }
+
+        function closePassagePreviewModal() {
+            document.getElementById('passagePreviewModal').style.display = 'none';
+            tempPassageData = null;
+        }
+
+        // Xuất JSON (Dùng dữ liệu đã được tải)
+        function exportJSON() {
+            // Loại bỏ trường ID Firebase khỏi dữ liệu xuất
+            const exportData = questions.map(({ id, ...rest }) => rest);
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+                type: "application/json",
+            });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "questions.json";
+            a.click();
+        }
+
+        // Xóa toàn bộ (Đã sửa để dùng Batch Delete)
+        async function clearAll() {
+            if (confirm("Xóa toàn bộ câu hỏi? Hành động này không thể hoàn tác!")) {
+                try {
+                    // Tải lại tất cả ID lần nữa để đảm bảo
+                    const snapshot = await questionsCollection.get();
+                    if (snapshot.docs.length === 0) return;
+
+                    // Dùng Write Batch để xóa nhiều document
+                    const batch = db.batch();
+                    snapshot.docs.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+
+                    questions = [];
+                    render();
+                    alert("✅ Đã xóa toàn bộ câu hỏi thành công.");
+                } catch (error) {
+                    console.error("Lỗi khi xóa toàn bộ câu hỏi:", error);
+                    alert("Lỗi khi xóa toàn bộ câu hỏi. Kiểm tra console.");
+                }
+            }
+        }
+
+        // 🔹 Format trong modal chỉnh sửa
+        function formatEdit(cmd) {
+            document.execCommand(cmd, false, null);
+            document.getElementById("editQ").focus();
+        }
+        function clearFormatEdit() {
+            document.execCommand("removeFormat", false, null);
+            document.getElementById("editQ").focus();
+        }
+
+        // 🔹 Format trong vùng dán nhanh
+        function formatMulti(cmd, targetId = 'quick') {
+            const targetDiv = document.getElementById(targetId);
+            if (!targetDiv) return;
+            const highlighted = targetDiv.querySelectorAll(
+                ".multi-select-highlight"
+            );
+
+            if (highlighted.length > 0) {
+                document.execCommand("styleWithCSS", false, false);
+                highlighted.forEach((span) => {
+                    const range = document.createRange();
+                    range.selectNodeContents(span);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    document.execCommand(cmd, false, null);
+                    selection.removeAllRanges();
+                });
+            } else {
+                document.execCommand(cmd, false, null);
+            }
+            targetDiv.focus();
+        }
+
+        function clearFormatMulti(targetId = 'quick') {
+            removeHighlights(targetId);
+            document.execCommand("removeFormat", false, null);
+            document.getElementById(targetId)?.focus();
+        }
+
+        // 🔹 Chế độ chọn nhiều
+        function toggleMultiSelectMode(btn, targetId = 'quick') {
+            // Tắt chế độ cũ nếu có
+            document.querySelectorAll('#toolbarMulti .active, #toolbarPassage .active').forEach(b => b.classList.remove('active'));
+
+            const isActive = btn.classList.contains('active');
+            isMultiSelectMode = !isActive;
+            btn.classList.toggle("active", isMultiSelectMode);
+
+            if (!isMultiSelectMode) {
+                removeHighlights(targetId);
+            }
+        }
+
+        function handleMouseUp(e) {
+            const targetDiv = e.currentTarget;
+            const toggleButton = document.querySelector(`#toolbar${targetDiv.id.replace('passage-sub-questions', 'Passage').replace('quick', 'Multi')} .active`);
+            if (!toggleButton || !toggleButton.classList.contains('active')) return;
+
+            const selection = window.getSelection();
+            if (selection.isCollapsed || !selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+            if (!targetDiv.contains(range.commonAncestorContainer)) return;
+
+            const span = document.createElement("span");
+            span.className = "multi-select-highlight";
+            range.surroundContents(span);
+            selection.removeAllRanges();
+        }
+
+        document.getElementById("quick").addEventListener("mouseup", handleMouseUp);
+        document.getElementById("passage-sub-questions").addEventListener("mouseup", handleMouseUp);
+
+        function removeHighlights(targetId = null) {
+            const selector = targetId ? `#${targetId} .multi-select-highlight` : '.multi-select-highlight';
+            const highlighted = document.querySelectorAll(selector);
+            highlighted.forEach((span) => {
+                span.replaceWith(...span.childNodes);
+            });
+            document.getElementById(targetId || 'quick')?.normalize();
+        }
+
+        function toggleInputType(type) {
+            if (type === 'single') {
+                document.getElementById('single-question-form').style.display = 'block';
+                document.getElementById('passage-form').style.display = 'none';
+            } else if (type === 'passage') {
+                document.getElementById('single-question-form').style.display = 'none';
+                document.getElementById('passage-form').style.display = 'block';
+            }
+        }
+
+        // 🔹 Xử lý dán (paste) để loại bỏ định dạng không mong muốn
+        function handlePaste(e) {
+            e.preventDefault();
+            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+        }
+
+        // Gắn sự kiện paste cho các ô contenteditable
+        document.getElementById('quick').addEventListener('paste', handlePaste);
+        document.getElementById('passage-text').addEventListener('paste', handlePaste);
+        document.getElementById('passage-sub-questions').addEventListener('paste', handlePaste);
+        document.getElementById('editQ').addEventListener('paste', handlePaste);
+        document.getElementById('passageEditSubQuestions').addEventListener('paste', handlePaste);
+
+
+        // 🔹 Xóa nội dung input
+        function clearSingleInput() {
+            const quickDiv = document.getElementById('quick');
+            if (quickDiv.innerHTML.trim() !== '' && confirm('Bạn có chắc muốn xóa toàn bộ nội dung đã nhập?')) {
+                quickDiv.innerHTML = '';
+            }
+        }
+
+        function clearPassageInput() {
+            const passageDiv = document.getElementById('passage-text');
+            const subQuestionsDiv = document.getElementById('passage-sub-questions');
+            if ((passageDiv.innerHTML.trim() !== '' || subQuestionsDiv.innerHTML.trim() !== '') && confirm('Bạn có chắc muốn xóa toàn bộ nội dung bài đọc và câu hỏi đã nhập?')) {
+                passageDiv.innerHTML = '';
+                subQuestionsDiv.innerHTML = '';
+            }
+        }
+
+        // Tải câu hỏi khi trang được load
+        loadQuestions();
+    </script>
+    </body>
+
+</html>
