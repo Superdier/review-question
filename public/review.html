@@ -153,23 +153,8 @@
             src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
         <script
             src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-        <script>
-        // 1. Cấu hình Firebase của bạn - THAY THẾ CHỖ NÀY!
-        const firebaseConfig = {
-            apiKey: "AIzaSyBe50FKA_JjkyYBvb1qzCacnOsyLNVjaLk",
-            authDomain: "review-a3790.firebaseapp.com",
-            projectId: "review-a3790",
-            storageBucket: "review-a3790.firebasestorage.app",
-            messagingSenderId: "130813969585",
-            appId: "1:130813969585:web:783a138ecb19d3c2cd8e90",
-            measurementId: "G-R8PY6X3DKN"
-        };
-
-        // 2. Khởi tạo Firebase và Firestore
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const questionsCollection = db.collection("questions");
-    </script>
+        <!-- Tải cấu hình và khởi tạo Firebase từ file riêng -->
+        <script src="./firebase-init.js"></script>
 
         <script>
         let allQuestions = []; // Tải từ Firestore
