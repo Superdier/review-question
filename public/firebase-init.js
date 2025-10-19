@@ -1,5 +1,6 @@
-// 1. Cấu hình Firebase của bạn
-// Các giá trị này sẽ được Vercel tự động thay thế khi deploy
+// 1. Cấu hình Firebase thật của bạn
+// FILE NÀY CHỨA THÔNG TIN NHẠY CẢM VÀ ĐÃ ĐƯỢC BỎ QUA BỞI .gitignore.
+// KHÔNG XÓA FILE NÀY KHỎI .gitignore.
 const firebaseConfig = {
   apiKey: "AIzaSyBe50FKA_JjkyYBvb1qzCacnOsyLNVjaLk",
   authDomain: "review-a3790.firebaseapp.com",

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
 
-    <head>
-        <meta charset="UTF-8" />
-        <title>入力 - 文法練習</title>
-        <style>
+<head>
+    <meta charset="UTF-8" />
+    <title>入力 - 文法練習</title>
+    <style>
         body {
             font-family: sans-serif;
             margin: 30px;
@@ -69,36 +69,36 @@
             background: rgba(0, 0, 0, 0.4);
             justify-content: center;
             align-items: center;
-        padding: 15px;
-        /* Thêm z-index để đảm bảo modal luôn ở trên cùng */
-        z-index: 1000;
+            padding: 15px;
+            /* Thêm z-index để đảm bảo modal luôn ở trên cùng */
+            z-index: 1000;
         }
 
         .modal-content {
             background: white;
             border-radius: 8px;
-        /* Thay đổi để responsive */
-        width: 100%;
-        max-width: 500px;
-        max-height: 90vh;
-        box-sizing: border-box;
-        /* Thêm flex để cố định footer */
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
+            /* Thay đổi để responsive */
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            box-sizing: border-box;
+            /* Thêm flex để cố định footer */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-      .modal-body {
-        padding: 20px;
-        overflow-y: auto;
-        flex-grow: 1;
-      }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
 
-      .modal-footer {
-        padding: 10px 20px;
-        border-top: 1px solid #eee;
-        text-align: right;
-        flex-shrink: 0;
+        .modal-footer {
+            padding: 10px 20px;
+            border-top: 1px solid #eee;
+            text-align: right;
+            flex-shrink: 0;
         }
 
         input[type="text"],
@@ -108,107 +108,95 @@
             padding: 5px;
         }
     </style>
-    </head>
+</head>
 
-    <body>
-        <h2>📘 Thêm câu hỏi mới</h2>
+<body>
+    <h2>📘 Thêm câu hỏi mới</h2>
 
-        <div id="add-question-area"
-            style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <div>
-                <label><input type="radio" name="questionType" value="single"
-                        onchange="toggleInputType(this.value)" checked> Câu hỏi
-                    đơn</label>
-                <label style="margin-left: 15px;"><input type="radio"
-                        name="questionType" value="passage"
-                        onchange="toggleInputType(this.value)"> Bài đọc (nhiều
-                    câu
-                    hỏi)</label>
-            </div>
-
-            <!-- Form cho câu hỏi đơn -->
-            <div id="single-question-form" style="margin-top: 15px;">
-                <div id="toolbarMulti" style="margin-bottom: 5px">
-                    <button id="multiSelectToggle"
-                        onclick="toggleMultiSelectMode(this)">✨
-                        Chọn nhiều</button>
-                    <button onclick="formatMulti('bold')"><b>B</b></button>
-                    <button onclick="formatMulti('underline')"><u>U</u></button>
-                    <button
-                        onclick="formatMulti('strikeThrough')"><s>S</s></button>
-                    <button onclick="clearFormatMulti()">🧹 Clear</button>
-                </div>
-                <div id="quick" contenteditable="true"
-                    placeholder="Dán nhiều câu hỏi đơn có 正解 / 不正解..."
-                    style="min-height: 200px; white-space: pre-wrap"></div>
-                <br />
-                <button onclick="quickParse()">⚙️ Phân tích & Lưu câu hỏi
-                    đơn</button>
-                <button type="button" onclick="clearSingleInput()">🗑️ Xóa nội
-                    dung</button>
-            </div>
-
-            <!-- Form cho bài đọc -->
-            <div id="passage-form" style="display: none; margin-top: 15px;">
-                <label for="passage-text"><b>Nội dung bài đọc:</b></label>
-                <div id="passage-text" contenteditable="true"
-                    placeholder="Dán nội dung bài đọc vào đây..."
-                    style="min-height: 150px; white-space: pre-wrap"></div>
-                <br>
-                <label for="passage-sub-questions"><b>Các câu hỏi cho bài
-                        đọc:</b></label>
-                <!-- Thêm thanh công cụ định dạng cho câu hỏi của bài đọc -->
-                <div id="toolbarPassage" style="margin-bottom: 5px">
-                    <button id="multiSelectTogglePassage"
-                        onclick="toggleMultiSelectMode(this, 'passage-sub-questions')">✨
-                        Chọn nhiều</button>
-                    <button
-                        onclick="formatMulti('bold', 'passage-sub-questions')"><b>B</b></button>
-                    <button
-                        onclick="formatMulti('underline', 'passage-sub-questions')"><u>U</u></button>
-                    <button
-                        onclick="formatMulti('strikeThrough', 'passage-sub-questions')"><s>S</s></button>
-                    <button
-                        onclick="clearFormatMulti('passage-sub-questions')">🧹
-                        Clear</button>
-                </div>
-                <div id="passage-sub-questions" contenteditable="true"
-                    placeholder="Dán các câu hỏi con (1. 2. ...) vào đây..."
-                    style="min-height: 150px; white-space: pre-wrap"></div>
-                <br />
-                <button onclick="savePassage()">⚙️ Lưu bài đọc & các câu
-                    hỏi</button>
-                <button type="button" onclick="clearPassageInput()">🗑️ Xóa nội
-                    dung</button>
-            </div>
+    <div id="add-question-area" style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <div>
+            <label><input type="radio" name="questionType" value="single" onchange="toggleInputType(this.value)"
+                    checked> Câu hỏi
+                đơn</label>
+            <label style="margin-left: 15px;"><input type="radio" name="questionType" value="passage"
+                    onchange="toggleInputType(this.value)"> Bài đọc (nhiều
+                câu
+                hỏi)</label>
         </div>
-        <a href="./review.html">👉 Sang trang ôn tập</a>
 
-        <h2>📋 Danh sách câu hỏi</h2>
-        <input type="text" id="searchInput" oninput="render()"
-            placeholder="Tìm kiếm trong câu hỏi..."
-            style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box;">
-        <button onclick="exportJSON()">💾 Xuất dữ liệu</button>
-        <button onclick="clearAll()">🗑 Xóa toàn bộ</button>
-        <table id="tbl">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Câu hỏi</th>
-                    <th>正解</th>
-                    <th>Thống kê (Đúng/Lần làm)</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <!-- Form cho câu hỏi đơn -->
+        <div id="single-question-form" style="margin-top: 15px;">
+            <div id="toolbarMulti" style="margin-bottom: 5px">
+                <button id="multiSelectToggle" onclick="toggleMultiSelectMode(this)">✨
+                    Chọn nhiều</button>
+                <button onclick="formatMulti('bold')"><b>B</b></button>
+                <button onclick="formatMulti('underline')"><u>U</u></button>
+                <button onclick="formatMulti('strikeThrough')"><s>S</s></button>
+                <button onclick="clearFormatMulti()">🧹 Clear</button>
+            </div>
+            <div id="quick" contenteditable="true" placeholder="Dán nhiều câu hỏi đơn có 正解 / 不正解..."
+                style="min-height: 200px; white-space: pre-wrap"></div>
+            <br />
+            <button onclick="quickParse()">⚙️ Phân tích & Lưu câu hỏi
+                đơn</button>
+            <button type="button" onclick="clearSingleInput()">🗑️ Xóa nội
+                dung</button>
+        </div>
 
-        <div class="modal" id="editModal">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <h3>✏️ Sửa câu hỏi</h3>
-                    <label>Câu hỏi:</label>
-                    <div id="editQ" contenteditable="true" style="
+        <!-- Form cho bài đọc -->
+        <div id="passage-form" style="display: none; margin-top: 15px;">
+            <label for="passage-text"><b>Nội dung bài đọc:</b></label>
+            <div id="passage-text" contenteditable="true" placeholder="Dán nội dung bài đọc vào đây..."
+                style="min-height: 150px; white-space: pre-wrap"></div>
+            <br>
+            <label for="passage-sub-questions"><b>Các câu hỏi cho bài
+                    đọc:</b></label>
+            <!-- Thêm thanh công cụ định dạng cho câu hỏi của bài đọc -->
+            <div id="toolbarPassage" style="margin-bottom: 5px">
+                <button id="multiSelectTogglePassage" onclick="toggleMultiSelectMode(this, 'passage-sub-questions')">✨
+                    Chọn nhiều</button>
+                <button onclick="formatMulti('bold', 'passage-sub-questions')"><b>B</b></button>
+                <button onclick="formatMulti('underline', 'passage-sub-questions')"><u>U</u></button>
+                <button onclick="formatMulti('strikeThrough', 'passage-sub-questions')"><s>S</s></button>
+                <button onclick="clearFormatMulti('passage-sub-questions')">🧹
+                    Clear</button>
+            </div>
+            <div id="passage-sub-questions" contenteditable="true"
+                placeholder="Dán các câu hỏi con (1. 2. ...) vào đây..."
+                style="min-height: 150px; white-space: pre-wrap"></div>
+            <br />
+            <button onclick="savePassage()">⚙️ Lưu bài đọc & các câu
+                hỏi</button>
+            <button type="button" onclick="clearPassageInput()">🗑️ Xóa nội
+                dung</button>
+        </div>
+    </div>
+    <a href="./review.html">👉 Sang trang ôn tập</a>
+
+    <h2>📋 Danh sách câu hỏi</h2>
+    <input type="text" id="searchInput" oninput="render()" placeholder="Tìm kiếm trong câu hỏi..."
+        style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box;">
+    <button onclick="exportJSON()">💾 Xuất dữ liệu</button>
+    <button onclick="clearAll()">🗑 Xóa toàn bộ</button>
+    <table id="tbl">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Câu hỏi</th>
+                <th>正解</th>
+                <th>Thống kê (Đúng/Lần làm)</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3>✏️ Sửa câu hỏi</h3>
+                <label>Câu hỏi:</label>
+                <div id="editQ" contenteditable="true" style="
               border: 1px solid #ccc;
               padding: 8px;
               min-height: 60px;
@@ -216,121 +204,124 @@
               white-space: pre-wrap;
             "></div>
 
-                    <div style="margin-top: 6px">
-                        <button type="button"
-                            onclick="formatEdit('bold')"><b>B</b></button>
-                        <button type="button" onclick="formatEdit('underline')">
-                            <u>U</u>
-                        </button>
-                        <button type="button"
-                            onclick="formatEdit('strikeThrough')">
-                            <s>S</s>
-                        </button>
-                        <button type="button" onclick="clearFormatEdit()">🧹
-                            Clear</button>
-                    </div>
+                <div style="margin-top: 6px">
+                    <button type="button" onclick="formatEdit('bold')"><b>B</b></button>
+                    <button type="button" onclick="formatEdit('underline')">
+                        <u>U</u>
+                    </button>
+                    <button type="button" onclick="formatEdit('strikeThrough')">
+                        <s>S</s>
+                    </button>
+                    <button type="button" onclick="clearFormatEdit()">🧹
+                        Clear</button>
+                </div>
 
-                    <label>Đáp án 1:</label><input type="text" id="editC1" />
-                    <label>Đáp án 2:</label><input type="text" id="editC2" />
-                    <label>Đáp án 3:</label><input type="text" id="editC3" />
-                    <label>Đáp án 4:</label><input type="text" id="editC4" />
-                    <label>Đúng (1-4):</label><input type="number"
-                        id="editCorrect"
-                        min="1" max="4" />
-                    <label for="editExplanation">Giải thích (Tham khảo):</label>
-                    <textarea id="editExplanation" rows="4"
-                        style="width: 100%; margin-top: 5px;"></textarea>
-                </div>
-                <div class="modal-footer">
-                    <button onclick="saveEdit()">💾 Lưu</button>
-                    <button onclick="closeModal()">✖ Đóng</button>
-                </div>
+                <label>Đáp án 1:</label><input type="text" id="editC1" />
+                <label>Đáp án 2:</label><input type="text" id="editC2" />
+                <label>Đáp án 3:</label><input type="text" id="editC3" />
+                <label>Đáp án 4:</label><input type="text" id="editC4" />
+                <label>Đúng (1-4):</label><input type="number" id="editCorrect" min="1" max="4" />
+                <label for="editExplanation">Giải thích (Tham khảo):</label>
+                <textarea id="editExplanation" rows="4" style="width: 100%; margin-top: 5px;"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveEdit()">💾 Lưu</button>
+                <button onclick="closeModal()">✖ Đóng</button>
             </div>
         </div>
+    </div>
 
-        <!-- Modal sửa BÀI ĐỌC -->
-        <div class="modal" id="passageEditModal">
-            <div class="modal-content" style="max-width: 800px;">
-                <div class="modal-body">
-                    <h3>✏️ Sửa bài đọc</h3>
+    <!-- Modal sửa BÀI ĐỌC -->
+    <div class="modal" id="passageEditModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-body">
+                <h3>✏️ Sửa bài đọc</h3>
 
-                    <label for="passageEditText"><b>Nội dung bài
-                            đọc:</b></label>
-                    <div id="passageEditText" contenteditable="true"
-                        style="min-height: 150px; white-space: pre-wrap"></div>
-                    <br>
+                <label for="passageEditText"><b>Nội dung bài
+                        đọc:</b></label>
+                <div id="passageEditText" contenteditable="true" style="min-height: 150px; white-space: pre-wrap"></div>
+                <br>
 
-                    <label for="passageEditSubQuestions"><b>Các câu hỏi cho bài
-                            đọc:</b></label>
-                    <div id="toolbarPassageEdit" style="margin-bottom: 5px">
-                        <button
-                            onclick="toggleMultiSelectMode(this, 'passageEditSubQuestions')">✨
-                            Chọn nhiều</button>
-                        <button
-                            onclick="formatMulti('bold', 'passageEditSubQuestions')"><b>B</b></button>
-                        <button
-                            onclick="formatMulti('underline', 'passageEditSubQuestions')"><u>U</u></button>
-                        <button
-                            onclick="formatMulti('strikeThrough', 'passageEditSubQuestions')"><s>S</s></button>
-                        <button
-                            onclick="clearFormatMulti('passageEditSubQuestions')">🧹
-                            Clear</button>
-                    </div>
-                    <div id="passageEditSubQuestions" contenteditable="true"
-                        style="min-height: 200px; white-space: pre-wrap"></div>
+                <label for="passageEditSubQuestions"><b>Các câu hỏi cho bài
+                        đọc:</b></label>
+                <div id="toolbarPassageEdit" style="margin-bottom: 5px">
+                    <button onclick="toggleMultiSelectMode(this, 'passageEditSubQuestions')">✨
+                        Chọn nhiều</button>
+                    <button onclick="formatMulti('bold', 'passageEditSubQuestions')"><b>B</b></button>
+                    <button onclick="formatMulti('underline', 'passageEditSubQuestions')"><u>U</u></button>
+                    <button onclick="formatMulti('strikeThrough', 'passageEditSubQuestions')"><s>S</s></button>
+                    <button onclick="clearFormatMulti('passageEditSubQuestions')">🧹
+                        Clear</button>
                 </div>
-                <div class="modal-footer">
-                    <button onclick="savePassageEdit()">💾 Lưu thay đổi</button>
-                    <button onclick="closePassageModal()">✖ Đóng</button>
-                </div>
+                <div id="passageEditSubQuestions" contenteditable="true"
+                    style="min-height: 200px; white-space: pre-wrap"></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="savePassageEdit()">💾 Lưu thay đổi</button>
+                <button onclick="closePassageModal()">✖ Đóng</button>
             </div>
         </div>
-        <div class="modal" id="dupModal">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <h3>⚠️ Câu hỏi trùng lặp</h3>
-                    <p>Chọn những câu bạn muốn <b>ghi đè</b>:</p>
-                    <div id="dupList"
-                        style="margin-top:8px; border:1px solid #ccc; padding:6px; background:#fafafa;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button onclick="confirmDup()">✅ Xác nhận</button>
-                    <button onclick="closeDup()">✖ Đóng</button>
-                </div>
+    </div>
+    <div class="modal" id="dupModal">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3>⚠️ Câu hỏi trùng lặp</h3>
+                <p>Chọn những câu bạn muốn <b>ghi đè</b>:</p>
+                <div id="dupList" style="margin-top:8px; border:1px solid #ccc; padding:6px; background:#fafafa;"></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="confirmDup()">✅ Xác nhận</button>
+                <button onclick="closeDup()">✖ Đóng</button>
             </div>
         </div>
+    </div>
 
-        <!-- Modal xem trước bài đọc -->
-        <div class="modal" id="passagePreviewModal">
-            <div class="modal-content" style="max-width: 800px;">
-                <div class="modal-body">
-                    <h3>🔍 Xem trước bài đọc & câu hỏi</h3>
-                    <h4>Nội dung bài đọc:</h4>
-                    <div id="previewPassageContent"
-                        style="background: #f9f9f9; border: 1px solid #eee; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
-                    </div>
+    <!-- Modal xem trước bài đọc -->
+    <div class="modal" id="passagePreviewModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-body">
+                <h3>🔍 Xem trước bài đọc & câu hỏi</h3>
+                <h4>Nội dung bài đọc:</h4>
+                <div id="previewPassageContent"
+                    style="background: #f9f9f9; border: 1px solid #eee; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                </div>
 
-                    <h4 style="margin-top: 20px;">Các câu hỏi đã phân tích:</h4>
-                    <div id="previewSubQuestionsList"></div>
-                </div>
-                <div class="modal-footer">
-                    <button onclick="confirmSavePassage()">✅ Xác nhận &
-                        Lưu</button>
-                    <button onclick="closePassagePreviewModal()">✖ Hủy</button>
-                </div>
+                <h4 style="margin-top: 20px;">Các câu hỏi đã phân tích:</h4>
+                <div id="previewSubQuestionsList"></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="confirmSavePassage()">✅ Xác nhận &
+                    Lưu</button>
+                <button onclick="closePassagePreviewModal()">✖ Hủy</button>
             </div>
         </div>
+    </div>
 
-        <script
-            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-        <script
-            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-        <!-- Tải cấu hình và khởi tạo Firebase từ file riêng -->
-        <script src="./firebase-init.js"></script>
+    <!-- Modal xem trước câu hỏi đơn -->
+    <div class="modal" id="parsePreviewModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-body">
+                <h3>🔍 Xem trước các câu hỏi đã phân tích</h3>
+                <p>Chọn những câu hỏi bạn muốn lưu. Bỏ chọn những câu phân tích sai hoặc không muốn thêm.</p>
+                <div id="parsePreviewList" style="margin-top: 15px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="confirmQuickParse()">✅ Xác nhận & Lưu các câu đã chọn</button>
+                <button onclick="closeParsePreviewModal()">✖ Hủy</button>
+            </div>
+        </div>
+    </div>
 
-        <script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- Tải cấu hình và khởi tạo Firebase từ file riêng -->
+    <script src="./firebase-init.js"></script>
+
+    <script>
         let questions = []; // Dữ liệu sẽ được tải từ Firebase
         let editIndex = -1;
+        let tempParsedQuestions = []; // Lưu các câu hỏi đã phân tích tạm thời
         let isMultiSelectMode = false;
 
         // Tải dữ liệu từ Firestore
@@ -419,7 +410,7 @@
         let tempDup = []; // lưu danh sách trùng tạm
         let tempPassageData = null; // Dữ liệu bài đọc tạm thời cho việc xem trước
 
-        // 🔹 Hàm tái sử dụng để phân tích câu hỏi từ HTML
+        // 🔹 Hàm tái sử dụng để phân tích câu hỏi từ HTML (ĐÃ SỬA HOÀN TOÀN)
         function parseQuestionsFromHTML(html) {
             const questions = [];
             if (!html) return questions;
@@ -428,77 +419,312 @@
                 .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
                 .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
 
+            // Chuẩn hóa và tách dòng - GIỮ NGUYÊN ĐỊNH DẠNG HTML
             const allLines = safeHTML
                 .replace(/<div>/g, "\n")
                 .replace(/<\/div>/g, "")
+                .replace(/<br\s*\/?>/gi, "\n")
+                .replace(/<\/p>/gi, "\n")
                 .split("\n")
                 .map(x => x.trim())
-                .filter(x => x); // Loại bỏ các dòng trống
+                .filter(x => x);
 
-            let questionBlocks = [];
-            let tempBlock = [];
+            // Phân tích theo từng khối câu hỏi dựa trên số thứ tự
+            let currentBlock = [];
+            let blocks = [];
 
-            // Tách các câu hỏi thành các khối dựa trên số thứ tự ở đầu dòng
             allLines.forEach(line => {
-                // Sửa logic: Tìm dòng BẮT ĐẦU bằng "số."
-                if (/^\s*\d+\.\s/.test(line) && tempBlock.length > 0) {
-                    questionBlocks.push(tempBlock);
-                    tempBlock = [line];
-                } else {
-                    tempBlock.push(line);
+                // Phát hiện bắt đầu câu hỏi mới: số theo sau bởi dấu chấm
+                if (line.match(/^\s*\d+\.\s/)) {
+                    if (currentBlock.length > 0) {
+                        blocks.push([...currentBlock]);
+                        currentBlock = [];
+                    }
                 }
+                currentBlock.push(line);
             });
-            if (tempBlock.length > 0) {
-                questionBlocks.push(tempBlock);
+
+            if (currentBlock.length > 0) {
+                blocks.push(currentBlock);
             }
 
-            questionBlocks.forEach(block => {
-                if (block.length < 2) return;
-
-                // Dòng đầu tiên luôn là câu hỏi
-                let questionHTML = block[0].replace(/^\d+\.?\s*/, "").trim();
-                const choices = [];
-                let correct = -1;
-                let explanation = ""; // Thêm biến để lưu giải thích
-
-                block.slice(1).forEach(line => {
-                    // Tìm các lựa chọn: "1) Nội dung"
-                    // Sửa logic: Tìm số thứ tự lựa chọn ngay cả khi có "正解:" đứng trước
-                    const choiceMatch = line.match(/(\d+)\)\s*(.*)/);
-                    if (choiceMatch) {
-                        const index = parseInt(choiceMatch[1]) - 1;
-                        // Lấy nội dung và loại bỏ các tag "正解", "不正解" nếu có
-                        const choiceText = choiceMatch[2].trim();
-                        if (index >= 0) {
-                            choices[index] = choiceText;
-                        }
-                    }
-
-                    // Tìm đáp án đúng từ dòng "正解: 1)" hoặc "1) 正解: Nội dung"
-                    const correctLineMatch = line.match(/正解[:：]?\s*(\d+)/);
-                    if (correctLineMatch) {
-                        correct = parseInt(correctLineMatch[1]) - 1;
-                    }
-
-                    // Xử lý trường hợp "正解" nằm trong dòng lựa chọn
-                    const correctInChoiceMatch = line.match(/^\s*(\d+)\)\s*正解/);
-                    if (correctInChoiceMatch) {
-                        correct = parseInt(correctInChoiceMatch[1]) - 1;
-                    }
-
-                    // Tìm dòng giải thích
-                    const explanationMatch = line.match(/^Tham khảo[:：]\s*(.*)/);
-                    if (explanationMatch) {
-                        explanation = explanationMatch[1].trim();
-                    }
-                });
-                
-                if (choices.length >= 2 && correct !== -1) {
-                    questions.push({ question: questionHTML, choices, correct, explanation });
+            // Phân tích từng khối
+            blocks.forEach(block => {
+                const question = parseSingleQuestionBlock(block);
+                if (question) {
+                    questions.push(question);
                 }
             });
- 
+
             return questions;
+        }
+
+        // 🔹 Hàm phân tích một khối câu hỏi đơn lẻ
+        function parseSingleQuestionBlock(blockLines) {
+            if (blockLines.length === 0) return null;
+
+            let questionText = "";
+            const choices = [];
+            let correctAnswer = -1;
+            let explanation = "";
+
+            // Xác định dòng đầu tiên (câu hỏi chính)
+            const firstLine = blockLines[0];
+            // Loại bỏ số thứ tự ở đầu dòng
+            questionText = firstLine.replace(/^\s*\d+\.\s*/, "");
+
+            // Biến tạm để thu thập các dòng tiếp theo của câu hỏi
+            let collectingQuestion = true;
+            let tempQuestionLines = [questionText];
+
+            // Duyệt các dòng còn lại
+            for (let i = 1; i < blockLines.length; i++) {
+                const line = blockLines[i];
+
+                // Kiểm tra các pattern đặc biệt trước
+
+                // 1. Dòng đáp án đúng: "正解: X) Nội dung" hoặc "正解: X"
+                const correctLineMatch = line.match(/正解\s*[:：]\s*(\d+)\)\s*(.*)/);
+                if (correctLineMatch) {
+                    correctAnswer = parseInt(correctLineMatch[1]) - 1;
+                    const choiceText = correctLineMatch[2].trim();
+                    if (choiceText) {
+                        choices[correctAnswer] = choiceText;
+                    }
+                    collectingQuestion = false;
+                    continue;
+                }
+
+                // 2. Dòng đáp án đơn giản: "正解: X"
+                const correctSimpleMatch = line.match(/正解\s*[:：]\s*(\d+)\s*$/);
+                if (correctSimpleMatch) {
+                    correctAnswer = parseInt(correctSimpleMatch[1]) - 1;
+                    collectingQuestion = false;
+                    continue;
+                }
+
+                // 3. Dòng đáp án sai: "不正解: X) Nội dung"
+                const incorrectLineMatch = line.match(/不正解\s*[:：]\s*(\d+)\)\s*(.*)/);
+                if (incorrectLineMatch) {
+                    const choiceIndex = parseInt(incorrectLineMatch[1]) - 1;
+                    const choiceText = incorrectLineMatch[2].trim();
+                    choices[choiceIndex] = choiceText;
+                    collectingQuestion = false;
+                    continue;
+                }
+
+                // 4. Lựa chọn thông thường: "X) Nội dung"
+                const choiceMatch = line.match(/^\s*(\d+)\)\s*(.*)/);
+                if (choiceMatch) {
+                    const choiceIndex = parseInt(choiceMatch[1]) - 1;
+                    let choiceText = choiceMatch[2].trim();
+
+                    // Xử lý trường hợp có "正解" trong lựa chọn
+                    if (choiceText.includes("正解")) {
+                        correctAnswer = choiceIndex;
+                        choiceText = choiceText.replace(/\s*正解\s*/, "").trim();
+                    }
+                    // Xử lý trường hợp có "不正解" trong lựa chọn
+                    if (choiceText.includes("不正解")) {
+                        choiceText = choiceText.replace(/\s*不正解\s*/, "").trim();
+                    }
+
+                    choices[choiceIndex] = choiceText;
+                    collectingQuestion = false;
+                    continue;
+                }
+
+                // 5. Giải thích
+                const explanationMatch = line.match(/^(Tham khảo|Giải thích|参考)\s*[:：]\s*(.*)/i);
+                if (explanationMatch) {
+                    explanation = explanationMatch[2];
+                    collectingQuestion = false;
+                    continue;
+                }
+
+                // 6. Nếu không khớp với pattern nào và vẫn đang thu thập câu hỏi
+                if (collectingQuestion) {
+                    tempQuestionLines.push(line);
+                }
+            }
+
+            // Ghép các dòng câu hỏi lại
+            questionText = tempQuestionLines.join("<br>");
+
+            // Điền các lựa chọn còn thiếu (nếu có)
+            for (let i = 0; i < 4; i++) {
+                if (!choices[i]) {
+                    choices[i] = "";
+                }
+            }
+
+            // Chỉ trả về câu hỏi nếu có ít nhất 2 lựa chọn và đáp án đúng được xác định
+            const filledChoices = choices.filter(c => c && c.trim() !== "");
+            if (filledChoices.length >= 2 && correctAnswer !== -1 && correctAnswer < choices.length) {
+                return {
+                    question: questionText,
+                    choices: choices,
+                    correct: correctAnswer,
+                    explanation: explanation
+                };
+            }
+
+            return null;
+        }
+        // 🔹 Hàm phụ để phân tích một câu hỏi duy nhất từ nội dung
+        function parseSingleQuestionFromContent(lines) {
+            const question = {
+                question: "",
+                choices: [],
+                correct: -1,
+                explanation: ""
+            };
+
+            let foundChoices = false;
+            let questionLines = [];
+
+            lines.forEach(line => {
+                // Xác định dòng câu hỏi (không phải lựa chọn và không phải đáp án)
+                const isChoice = line.match(/^\s*(\d+)\)/);
+                const isCorrectAnswer = line.match(/正解\s*[:：]?\s*(\d+)/);
+                const isIncorrectMarker = line.match(/不正解\s*[:：]?\s*(\d+\))/);
+
+                if (!isChoice && !isCorrectAnswer && !isIncorrectMarker && !foundChoices) {
+                    questionLines.push(line);
+                } else {
+                    foundChoices = true;
+
+                    // Xử lý lựa chọn
+                    const choiceMatch = line.match(/^\s*(\d+)\)\s*(.*)/);
+                    if (choiceMatch) {
+                        const choiceNum = parseInt(choiceMatch[1]);
+                        let choiceText = choiceMatch[2].trim();
+
+                        // Xử lý "不正解" ở đầu
+                        if (choiceText.startsWith("不正解")) {
+                            choiceText = choiceText.replace(/^不正解\s*[:：]?\s*/, "");
+                        }
+
+                        // Xử lý "正解" trong lựa chọn
+                        if (choiceText.includes("正解")) {
+                            question.correct = choiceNum - 1;
+                            choiceText = choiceText.replace(/\s*正解\s*$/, "").replace(/\s*正解\s*[:：]\s*/, "");
+                        }
+
+                        question.choices[choiceNum - 1] = choiceText;
+                    }
+
+                    // Xử lý đáp án đúng riêng biệt
+                    const correctMatch = line.match(/正解\s*[:：]?\s*(\d+)/);
+                    if (correctMatch) {
+                        question.correct = parseInt(correctMatch[1]) - 1;
+                    }
+                }
+            });
+
+            question.question = questionLines.join("<br>");
+
+            // Nếu vẫn không có câu hỏi, sử dụng dòng đầu tiên
+            if (!question.question && lines.length > 0) {
+                question.question = lines[0];
+            }
+
+            return question.choices.length >= 2 && question.correct !== -1 ? [question] : [];
+        }
+
+        function populateAndShowParsePreviewModal(parsedQuestions) {
+            tempParsedQuestions = parsedQuestions;
+            const previewList = document.getElementById('parsePreviewList');
+            previewList.innerHTML = ""; // Xóa nội dung cũ
+
+            parsedQuestions.forEach((q, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.id = `preview-item-${index}`;
+                itemDiv.style = "border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 4px; background: #f9f9f9;";
+                itemDiv.innerHTML = getParsedQuestionHTML(q, index);
+                previewList.appendChild(itemDiv);
+            });
+
+            document.getElementById('parsePreviewModal').style.display = 'flex';
+        }
+
+        function getParsedQuestionHTML(q, index, isEditing = false) {
+            if (isEditing) {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="font-weight: bold;"><input type="checkbox" class="parse-preview-checkbox" data-index="${index}" checked> Câu hỏi ${index + 1}</label>
+                        <button onclick="saveParsedQuestionEdit(${index})">💾 Lưu</button>
+                    </div>
+                    <div id="toolbar-preview-edit-${index}" style="margin-bottom: 5px; border: 1px solid #eee; padding: 3px; border-radius: 4px;">
+                        <button onclick="toggleMultiSelectMode(this, 'edit-preview-q-${index}')" title="Chọn nhiều">✨</button>
+                        <button onclick="formatMulti('bold', 'edit-preview-q-${index}')"><b>B</b></button>
+                        <button onclick="formatMulti('underline', 'edit-preview-q-${index}')"><u>U</u></button>
+                        <button onclick="formatMulti('strikeThrough', 'edit-preview-q-${index}')"><s>S</s></button>
+                        <button onclick="clearFormatMulti('edit-preview-q-${index}')" title="Xóa định dạng">🧹</button>
+                    </div>
+                    <div contenteditable="true" id="edit-preview-q-${index}" style="border: 1px dashed #ccc; padding: 5px; margin-bottom: 5px; background: white;">${q.question}</div>
+                    ${[0, 1, 2, 3].map(cIndex => `
+                        <div style="display: flex; align-items: center; margin-bottom: 3px;">
+                            <span style="margin-right: 5px;">${cIndex + 1})</span>
+                            <input type="text" id="edit-preview-c-${index}-${cIndex}" value="${q.choices[cIndex] || ''}" style="flex-grow: 1; padding: 3px;">
+                        </div>
+                    `).join('')}
+                    <div style="display: flex; align-items: center; margin-top: 5px;">
+                        <label for="edit-preview-correct-${index}" style="margin-right: 5px;">Đáp án đúng (1-4):</label>
+                        <input type="number" id="edit-preview-correct-${index}" value="${q.correct + 1}" min="1" max="4" style="width: 60px;">
+                    </div>
+                     <div style="margin-top: 5px;">
+                        <label for="edit-preview-explanation-${index}" style="display:block; margin-bottom: 3px;">Giải thích:</label>
+                        <textarea id="edit-preview-explanation-${index}" style="width: 100%; font-size: 13px;" rows="2">${q.explanation || ''}</textarea>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="font-weight: bold; flex-grow: 1;">
+                            <input type="checkbox" class="parse-preview-checkbox" data-index="${index}" checked>
+                            Câu hỏi ${index + 1}: ${q.question}
+                        </label>
+                        <button onclick="editParsedQuestion(${index})">✏️ Sửa</button>
+                    </div>
+                    <ul>
+                        ${q.choices.map((choice, cIndex) => `
+                            <li style="${cIndex === q.correct ? 'font-weight: bold; color: green;' : ''}">
+                                ${cIndex + 1}) ${choice}
+                            </li>
+                        `).join('')}
+                    </ul>
+                    ${q.explanation ? `<div style="margin-top: 8px; padding: 5px; background-color: #e9e9e9; border-radius: 3px;"><b>Giải thích:</b> ${q.explanation}</div>` : ''}
+                `;
+            }
+        }
+
+        function editParsedQuestion(index) {
+            const q = tempParsedQuestions[index];
+            const itemDiv = document.getElementById(`preview-item-${index}`);
+            itemDiv.innerHTML = getParsedQuestionHTML(q, index, true);
+            // Gắn sự kiện để chế độ "Chọn nhiều" hoạt động
+            document.getElementById(`edit-preview-q-${index}`).addEventListener("mouseup", handleMouseUp);
+        }
+
+        function saveParsedQuestionEdit(index) {
+            const q = tempParsedQuestions[index];
+            // Xóa các highlight của chế độ "Chọn nhiều" trước khi lưu
+            removeHighlights(`edit-preview-q-${index}`);
+            q.question = document.getElementById(`edit-preview-q-${index}`).innerHTML;
+            q.choices = [0, 1, 2, 3].map(cIndex => document.getElementById(`edit-preview-c-${index}-${cIndex}`).value);
+            q.correct = parseInt(document.getElementById(`edit-preview-correct-${index}`).value) - 1;
+            q.explanation = document.getElementById(`edit-preview-explanation-${index}`).value;
+
+            const itemDiv = document.getElementById(`preview-item-${index}`);
+            itemDiv.innerHTML = getParsedQuestionHTML(q, index, false);
+            // Đảm bảo checkbox vẫn được chọn sau khi lưu
+            itemDiv.querySelector('.parse-preview-checkbox').checked = true;
+        }
+
+        function closeParsePreviewModal() {
+            document.getElementById('parsePreviewModal').style.display = 'none';
+            tempParsedQuestions = [];
         }
 
         // 🔹 Phân tích nhiều câu hỏi (Đã sửa để dùng Firestore)
@@ -518,11 +744,26 @@
                 return;
             }
 
+            // Hiển thị modal xem trước thay vì xử lý ngay
+            populateAndShowParsePreviewModal(newQuestions);
+        }
+
+        async function confirmQuickParse() {
+            const selectedCheckboxes = document.querySelectorAll('.parse-preview-checkbox:checked');
+            const selectedQuestions = Array.from(selectedCheckboxes).map(cb => {
+                const index = parseInt(cb.getAttribute('data-index'));
+                return tempParsedQuestions[index];
+            });
+
+            if (selectedQuestions.length === 0) {
+                alert("Bạn chưa chọn câu hỏi nào để lưu.");
+                return;
+            }
             const current = questions; // Dùng biến questions đã load từ Firestore
             const duplicates = [];
             const unique = [];
 
-            for (const nq of newQuestions) {
+            for (const nq of selectedQuestions) {
                 const dup = current.find(q =>
                     // Chỉ so sánh nếu q là câu hỏi đơn và có thuộc tính 'question'
                     q.type !== 'passage' && q.question &&
@@ -554,9 +795,11 @@
                     ...q,
                     timestamp: serverTimestamp()
                     // attempts và correctAttempts đã được thêm ở trên
-                })));
+                }))).then(() => {
+                    alert(`✅ Đã thêm ${unique.length} câu hỏi mới (giữ định dạng HTML).`);
+                });
+                closeParsePreviewModal();
                 await loadQuestions(); // Tải lại danh sách
-                alert(`✅ Đã thêm ${unique.length} câu hỏi (giữ định dạng HTML).`);
             }
         }
 
@@ -682,7 +925,7 @@
         function openEdit(i) {
             editIndex = i;
             const q = questions[i];
- 
+
             if (q.type === 'passage') {
                 document.getElementById("passageEditText").innerHTML = q.passage;
                 document.getElementById("passageEditSubQuestions").innerHTML = formatSubQuestionsForEditing(q.sub_questions);
@@ -741,10 +984,10 @@
                 alert("Lỗi khi lưu bài đọc. Kiểm tra console.");
             }
         }
- 
+
         async function saveEdit() {
             const q = questions[editIndex];
-            
+
             if (q.type === 'passage') {
                 alert("Chức năng sửa bài đọc chưa được hỗ trợ trong phiên bản này.");
                 return;
@@ -896,8 +1139,14 @@
         }
 
         function handleMouseUp(e) {
-            const targetDiv = e.currentTarget;
-            const toggleButton = document.querySelector(`#toolbar${targetDiv.id.replace('passage-sub-questions', 'Passage').replace('quick', 'Multi')} .active`);
+            const targetDiv = e.currentTarget; // Đây là div contenteditable
+
+            // Tìm thanh công cụ tương ứng với div này
+            const toolbar = targetDiv.previousElementSibling;
+            if (!toolbar || !toolbar.id.startsWith('toolbar-')) return;
+
+            // Tìm nút "Chọn nhiều" đang active trong thanh công cụ đó
+            const toggleButton = toolbar.querySelector('button.active');
             if (!toggleButton || !toggleButton.classList.contains('active')) return;
 
             const selection = window.getSelection();
@@ -914,6 +1163,8 @@
 
         document.getElementById("quick").addEventListener("mouseup", handleMouseUp);
         document.getElementById("passage-sub-questions").addEventListener("mouseup", handleMouseUp);
+        // Lưu ý: các ô sửa trong modal sẽ được gắn sự kiện động trong hàm editParsedQuestion
+
 
         function removeHighlights(targetId = null) {
             const selector = targetId ? `#${targetId} .multi-select-highlight` : '.multi-select-highlight';
@@ -969,6 +1220,6 @@
         // Tải câu hỏi khi trang được load
         loadQuestions();
     </script>
-    </body>
+</body>
 
 </html>
