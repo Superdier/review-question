@@ -435,7 +435,7 @@
 
             allLines.forEach(line => {
                 // Phát hiện bắt đầu câu hỏi mới: số theo sau bởi dấu chấm
-                if (line.match(/^\s*\d+\.\s/)) {
+                if (line.match(/^\s*\d+\.\s/) || line.match(/^\s*\d+\s*$/)) {
                     if (currentBlock.length > 0) {
                         blocks.push([...currentBlock]);
                         currentBlock = [];
@@ -471,11 +471,19 @@
             // Xác định dòng đầu tiên (câu hỏi chính)
             const firstLine = blockLines[0];
             // Loại bỏ số thứ tự ở đầu dòng
-            questionText = firstLine.replace(/^\s*\d+\.\s*/, "");
+            questionText = firstLine.replace(/^\s*\d+\.?\s*/, "");
+
+            // Xử lý trường hợp chỉ có số thứ tự, không có nội dung câu hỏi
+            if (!questionText.trim()) {
+                questionText = `(Câu hỏi ${firstLine.replace(/\D/g, "")})`;
+            }
 
             // Biến tạm để thu thập các dòng tiếp theo của câu hỏi
             let collectingQuestion = true;
             let tempQuestionLines = [questionText];
+            
+            // Đếm số lựa chọn đã tìm thấy để xác định khi nào dừng thu thập câu hỏi
+            let choicesFoundCount = 0;
 
             // Duyệt các dòng còn lại
             for (let i = 1; i < blockLines.length; i++) {
@@ -491,7 +499,10 @@
                     if (choiceText) {
                         choices[correctAnswer] = choiceText;
                     }
-                    collectingQuestion = false;
+                    // Nếu đã tìm thấy ít nhất 2 lựa chọn, có thể chắc chắn đây không phải là một phần của câu hỏi nữa.
+                    if (choices.filter(c => c).length >= 2) {
+                        collectingQuestion = false;
+                    }
                     continue;
                 }
 
@@ -499,7 +510,9 @@
                 const correctSimpleMatch = line.match(/正解\s*[:：]\s*(\d+)\s*$/);
                 if (correctSimpleMatch) {
                     correctAnswer = parseInt(correctSimpleMatch[1]) - 1;
-                    collectingQuestion = false;
+                    if (choices.filter(c => c).length >= 2) {
+                        collectingQuestion = false;
+                    }
                     continue;
                 }
 
@@ -509,7 +522,9 @@
                     const choiceIndex = parseInt(incorrectLineMatch[1]) - 1;
                     const choiceText = incorrectLineMatch[2].trim();
                     choices[choiceIndex] = choiceText;
-                    collectingQuestion = false;
+                    if (choices.filter(c => c).length >= 2) {
+                        collectingQuestion = false;
+                    }
                     continue;
                 }
 
@@ -530,14 +545,19 @@
                     }
 
                     choices[choiceIndex] = choiceText;
-                    collectingQuestion = false;
+                    choicesFoundCount++;
+
+                    // Chỉ dừng thu thập câu hỏi khi đã tìm thấy ít nhất 2 lựa chọn.
+                    if (choicesFoundCount >= 2) {
+                        collectingQuestion = false;
+                    }
                     continue;
                 }
 
                 // 5. Giải thích
                 const explanationMatch = line.match(/^(Tham khảo|Giải thích|参考)\s*[:：]\s*(.*)/i);
                 if (explanationMatch) {
-                    explanation = explanationMatch[2];
+                    explanation = explanationMatch[2].trim();
                     collectingQuestion = false;
                     continue;
                 }
@@ -556,6 +576,11 @@
                 if (!choices[i]) {
                     choices[i] = "";
                 }
+            }
+
+            // Nếu không tìm thấy dòng "正解" nào, giả định lựa chọn đầu tiên là đúng
+            if (correctAnswer === -1 && choices.filter(c => c && c.trim() !== "").length > 0) {
+                correctAnswer = 0;
             }
 
             // Chỉ trả về câu hỏi nếu có ít nhất 2 lựa chọn và đáp án đúng được xác định
