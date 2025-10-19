@@ -1,0 +1,24 @@
+// 1. Cấu hình Firebase mẫu
+// ĐÂY LÀ FILE MẪU. Đừng điền thông tin nhạy cảm vào đây.
+// Hãy tạo một bản sao của file này, đổi tên thành `firebase-init.js` (file này đã được thêm vào .gitignore)
+// và điền các giá trị cấu hình Firebase thật của bạn vào file `firebase-init.js` đó.
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID"
+};
+
+// 2. Khởi tạo Firebase và Firestore
+try {
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+    var serverTimestamp = firebase.firestore.FieldValue.serverTimestamp;
+    var questionsCollection = db.collection("questions");
+} catch (e) {
+    console.error("Lỗi khởi tạo Firebase:", e);
+    alert("Không thể kết nối đến cơ sở dữ liệu. Vui lòng kiểm tra cấu hình Firebase và kết nối mạng.");
+}
