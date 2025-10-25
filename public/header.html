@@ -1,0 +1,17 @@
+<header class="app-header">
+  <div class="header-content">
+    <div id="breadcrumbs" class="breadcrumbs"></div>
+    <nav id="common-nav" class="nav-menu-desktop"></nav>
+    <div class="header-actions">
+      <button id="theme-toggle-desktop" onclick="toggleTheme()">🌙</button>
+    </div>
+  </div>
+</header>
+<!-- Các nút điều khiển và menu cho di động -->
+<div class="mobile-controls">
+  <button id="theme-toggle" onclick="toggleTheme()">🌙</button>
+  <button id="hamburger-menu" onclick="toggleMobileMenu()">☰</button>
+</div>
+<div id="mobile-menu-overlay" onclick="toggleMobileMenu()">
+  <nav id="nav-menu-mobile" class="nav-menu-mobile"></nav>
+</div>

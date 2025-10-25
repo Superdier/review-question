@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="./css/common.css">
+        <title>Thống kê - 文法練習</title>
+        <style>
+        /* Các biến màu này đã được định nghĩa trong common.css nhưng được giữ lại để tham khảo hoặc ghi đè nếu cần */
+        :root {
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+ 
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+ 
+        h2,
+        h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .dark-mode h2, .dark-mode h3 {
+            color: var(--link-color);
+        }
+ 
+        .stat-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+ 
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+ 
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background-color: var(--bg-color);
+            border-radius: 6px;
+        }
+
+        .stat-item .value { 
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .stat-item .icon {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+        }
+ 
+        .stat-item .label {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+ 
+        .dark-mode .stat-item .label {
+            color: #adb5bd;
+        }
+ 
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--bg-color);
+        }
+ 
+        .progress-bar {
+            width: 100%;
+            background-color: #e9ecef;
+            color: var(--text-color);
+            border-radius: .25rem;
+            height: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+ 
+        .progress-bar-inner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            transition: width 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
+            border-radius: .25rem;
+        }
+        .progress-bar-text {
+            font-size: 12px; font-weight: bold; z-index: 1;
+        }
+ 
+        .bg-success {
+            background-color: var(--success-color);
+        }
+ 
+        .bg-warning {
+            background-color: var(--warning-color);
+        }
+ 
+        .bg-danger {
+            background-color: var(--danger-color);
+        }
+ 
+        .dark-mode .progress-bar {
+            background-color: #495057; /* Darker grey for dark mode */
+            color: var(--text-color);
+        }
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-container label {
+            font-weight: bold;
+        }
+
+        .filter-container input {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+        .filter-container select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+    </style>
+    </head>
+
+    <body class="preload">
+        <!-- Placeholder for the header component -->
+        <header class="app-header">
+            <div class="header-content">
+                <div id="breadcrumbs" class="breadcrumbs"></div>
+                <nav id="common-nav" class="nav-menu-desktop"></nav>
+                <div class="header-actions">
+                    <button id="theme-toggle-desktop"
+                        onclick="toggleTheme()">🌙</button>
+                </div>
+            </div>
+        </header>
+        <!-- Các nút điều khiển và menu cho di động -->
+        <div class="mobile-controls">
+            <button id="theme-toggle" onclick="toggleTheme()">🌙</button>
+            <button id="hamburger-menu" onclick="toggleMobileMenu()">☰</button>
+        </div>
+        <div id="mobile-menu-overlay" onclick="toggleMobileMenu()">
+            <nav id="nav-menu-mobile" class="nav-menu-mobile"></nav>
+        </div>
+
+        <div class="container">
+
+            <h2>📊 Thống kê hiệu quả học tập</h2>
+
+            <div class="stat-card" id="overall-stats">
+                <h3>Tổng quan</h3>
+                <div id="loader" style="text-align: center;">Đang tải dữ
+                    liệu...</div>
+                <div class="stat-grid" id="stats-grid-content"
+                    style="display: none;">
+                    <!-- Dữ liệu sẽ được chèn vào đây bởi JS -->
+                </div>
+            </div>
+
+            <div class="stat-card" id="performance-analysis"
+                style="display: none;">
+                <h3>Phân tích hiệu suất</h3>
+                <div class="filter-container">
+                    <label for="min-attempts">Lọc theo số lần làm tối
+                        thiểu:</label>
+                    <input type="number" id="min-attempts" value="3" min="1"
+                        style="width: 80px;">
+                    <label for="tag-filter">Lọc theo Tag:</label>
+                    <select id="tag-filter">
+                        <option value>Tất cả các Tag</option>
+                    </select>
+                    <label for="favorite-filter">Lọc theo Gắn sao:</label>
+                    <select id="favorite-filter">
+                        <option value>Tất cả</option>
+                        <option value="yes">Chỉ câu đã gắn sao</option>
+                    </select>
+                </div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <h4>10 câu hỏi khó nhất (tỷ lệ đúng thấp)</h4>
+                    <button id="review-hardest-btn" class="btn-danger">
+                        🔥 Ôn tập lại các câu này
+                    </button>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table id="hardest-questions">
+                        <thead>
+                            <tr>
+                                <th>Câu hỏi</th>
+                                <th>Tỷ lệ đúng</th>
+                                <th>Thống kê (Đúng/Lần làm)</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 30px;">
+                    <h4>10 câu hỏi dễ nhất (tỷ lệ đúng cao)</h4>
+                    <button id="review-easiest-btn" class="btn-success">
+                        ✅ Ôn tập lại các câu này
+                    </button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="easiest-questions">
+                        <thead>
+                            <tr>
+                                <th>Câu hỏi</th>
+                                <th>Tỷ lệ đúng</th>
+                                <th>Thống kê (Đúng/Lần làm)</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <script
+            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+        <script
+            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+        <script src="./js/firebase-init.js"></script>
+
+        <script src="./js/common.js"></script>
+        <script>
+        let allQuestionsData = [];
+        let hardestQuestionsList = [];
+        let easiestQuestionsList = [];
+
+        document.getElementById('min-attempts').addEventListener('input', () => calculateAndDisplayPerformance(allQuestionsData));
+        document.getElementById('tag-filter').addEventListener('change', () => calculateAndDisplayPerformance(allQuestionsData));
+        document.getElementById('favorite-filter').addEventListener('change', () => calculateAndDisplayPerformance(allQuestionsData));
+        document.getElementById('review-hardest-btn').addEventListener('click', () => startReview(hardestQuestionsList));
+        document.getElementById('review-easiest-btn').addEventListener('click', () => startReview(easiestQuestionsList));
+        loadStatistics();
+
+        async function loadStatistics() {
+            try {
+                document.getElementById('loader').style.display = 'block';
+                const snapshot = await questionsCollection.get();
+                const questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (questions.length === 0) {
+                    document.getElementById('loader').textContent = "Chưa có dữ liệu để thống kê.";
+                    return;
+                }
+
+                allQuestionsData = questions;
+                populateTagFilter(allQuestionsData);
+                calculateAndDisplayOverallStats(allQuestionsData);
+                calculateAndDisplayPerformance(allQuestionsData);
+
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('stats-grid-content').style.display = 'grid';
+                document.getElementById('performance-analysis').style.display = 'block';
+
+            } catch (error) {
+                console.error("Lỗi khi tải thống kê:", error);
+                document.getElementById('loader').innerHTML = "<p style='color:red;'>Lỗi tải dữ liệu. Vui lòng kiểm tra lại.</p>";
+            }
+        }
+
+        function populateTagFilter(questions) {
+            const tagFilter = document.getElementById('tag-filter');
+            const tags = new Set(questions.map(q => q.tag).filter(Boolean)); // Lấy các tag duy nhất và khác null/undefined
+            
+            // Xóa các option cũ trừ option "Tất cả"
+            tagFilter.innerHTML = '<option value="">Tất cả các Tag</option>';
+
+            tags.forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag;
+                option.textContent = tag;
+                tagFilter.appendChild(option);
+            });
+        }
+
+        function calculateAndDisplayOverallStats(questions) {
+            const selectedTag = document.getElementById('tag-filter').value;
+            const filteredQuestions = selectedTag ? questions.filter(q => q.tag === selectedTag) : questions;
+
+            const totalQuestions = filteredQuestions.length;
+            const singleQuestions = filteredQuestions.filter(q => q.type !== 'passage').length;
+            const passageQuestions = totalQuestions - singleQuestions;
+            const attemptedQuestions = filteredQuestions.filter(q => (q.attempts || 0) > 0).length;
+            const favoritedQuestions = filteredQuestions.filter(q => q.isFavorite).length;
+
+            let totalCorrect = 0;
+            let totalPossibleAttempts = 0;
+
+            filteredQuestions.forEach(q => {
+                totalCorrect += q.correctAttempts || 0;
+                if (q.type === 'passage') {
+                    totalPossibleAttempts += (q.attempts || 0) * (q.totalSubQuestions || 1);
+                } else {
+                    totalPossibleAttempts += q.attempts || 0;
+                }
+            });
+
+            const overallAccuracy = totalPossibleAttempts > 0 ? ((totalCorrect / totalPossibleAttempts) * 100).toFixed(1) : 0;
+
+            const grid = document.getElementById('stats-grid-content');
+            grid.innerHTML = `
+                <div class="stat-item"><div class="icon">📚</div><div class="value">${totalQuestions}</div><div class="label">Tổng số câu hỏi</div></div>
+                <div class="stat-item"><div class="icon">📝</div><div class="value">${singleQuestions}</div><div class="label">Câu hỏi đơn</div></div>
+                <div class="stat-item"><div class="icon">📖</div><div class="value">${passageQuestions}</div><div class="label">Bài đọc</div></div>
+                <div class="stat-item"><div class="icon">✍️</div><div class="value">${attemptedQuestions}</div><div class="label">Câu đã làm</div></div>
+                <div class="stat-item"><div class="icon">⭐</div><div class="value">${favoritedQuestions}</div><div class="label">Câu đã gắn sao</div></div>
+                <div class="stat-item"><div class="icon">🎯</div><div class="value">${overallAccuracy}%</div><div class="label">Tỷ lệ đúng chung</div></div>
+            `;
+        }
+
+        function calculateAndDisplayPerformance(questions) {
+            const minAttempts = parseInt(document.getElementById('min-attempts').value) || 1;
+            const selectedTag = document.getElementById('tag-filter').value;
+            const favoriteFilter = document.getElementById('favorite-filter')?.value; // Thêm '?' để tránh lỗi nếu element không tồn tại
+
+            let filteredByTag = selectedTag ? questions.filter(q => q.tag === selectedTag) : questions;
+            if (favoriteFilter === 'yes') {
+                filteredByTag = filteredByTag.filter(q => q.isFavorite);
+            }
+
+            const questionStats = filteredByTag.map(q => {
+                const attempts = q.attempts || 0;
+                const correctAttempts = q.correctAttempts || 0;
+                let totalPossible = attempts;
+                if (q.type === 'passage') {
+                    totalPossible = attempts * (q.totalSubQuestions || 1);
+                }
+
+                const successRate = totalPossible > 0 ? (correctAttempts / totalPossible) : -1; // -1 để câu chưa làm không bị xếp hạng
+                const questionText = q.type === 'passage' ? `[Bài đọc] ${q.passage.substring(0, 80)}...` : (q.question || "").substring(0, 80);
+
+                return { ...q, successRate, questionText, totalPossible };
+            }).filter(q => q.attempts >= minAttempts); // Lọc theo số lần làm tối thiểu
+
+            // Sắp xếp khó nhất (tỷ lệ đúng thấp nhất)
+            hardestQuestionsList = [...questionStats].sort((a, b) => a.successRate - b.successRate).slice(0, 10);
+
+            // Sắp xếp dễ nhất (tỷ lệ đúng cao nhất)
+            easiestQuestionsList = [...questionStats].sort((a, b) => b.successRate - a.successRate).slice(0, 10);
+
+            renderTable('hardest-questions', hardestQuestionsList);
+            renderTable('easiest-questions', easiestQuestionsList);
+        }
+
+        function renderTable(tableId, data) {
+            const tbody = document.getElementById(tableId).querySelector('tbody');
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Không có dữ liệu.</td></tr>';
+                return;
+            }
+            data.forEach(q => {
+                const rate = q.successRate * 100;
+                let barClass = 'bg-success';
+                if (rate < 75) barClass = 'bg-warning';
+                if (rate < 50) barClass = 'bg-danger';
+
+                const row = `
+                    <tr>
+                        <td>${q.questionText}</td>
+                        <td style="width: 200px;">
+                            <div class="progress-bar">
+                                <div class="progress-bar-inner ${barClass}" style="width: ${rate.toFixed(1)}%;"></div>
+                                <span class="progress-bar-text">${rate.toFixed(1)}%</span>
+                            </div>
+                        </td>
+                        <td style="text-align: center; width: 150px;">${q.correctAttempts || 0} / ${q.totalPossible}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function startReview(questionList) {
+            if (!questionList || questionList.length === 0) {
+                alert("Không có câu hỏi nào trong danh sách này để ôn tập.");
+                return;
+            }
+
+            const questionIds = questionList.map(q => q.id);
+            sessionStorage.setItem('filteredQuestionIds', JSON.stringify(questionIds));
+            window.location.href = './review.html';
+        }
+    </script>
+    </body>
+
+</html>

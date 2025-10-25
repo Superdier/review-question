@@ -1,0 +1,483 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* Biến màu cho giao diện Sáng */
+:root {
+    --bg-color: #f4f7f9;
+    --text-color: #212529;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --button-bg: #f8f9fa;
+    --button-hover-bg: #e9ecef;
+    --primary-bg: #007bff;
+    --primary-text: #ffffff;
+    --primary-hover: #0069d9;
+    --correct-bg: #d4edda;
+    --correct-text: #155724;
+    --wrong-bg: #f8d7da;
+    --wrong-text: #721c24;
+    --explanation-bg: #e9ecef;
+    --link-color: #005a9c;
+    --shadow: 0 2px 4px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.06);
+    --input-bg: #fff;
+}
+
+/* Biến màu cho giao diện Tối */
+.dark-mode {
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --card-bg: #2c2c2c;
+    --border-color: #444;
+    --button-bg: #3a3a3a;
+    --button-hover-bg: #4a4a4a;
+    --primary-bg: #0d6efd;
+    --primary-hover: #0b5ed7;
+    --correct-bg: #1c3b23;
+    --correct-text: #a6d9b3;
+    --wrong-bg: #4d2a2d;
+    --wrong-text: #f1b0b7;
+    --explanation-bg: #2c3034;
+    --link-color: #80bfff;
+    --shadow: 0 4px 12px rgba(0,0,0,0.25);
+    --input-bg: #3a3a3a;
+}
+
+/* --- Kiểu dáng chung cho các nút --- */
+button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    padding: 8px 15px;
+    margin: 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--button-bg);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+button:hover {
+    background-color: var(--button-hover-bg);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+button:active {
+    transform: translateY(1px);
+}
+
+/* Utility classes for button content */
+.button-icon {
+    line-height: 1; /* Ensure icon is vertically centered */
+}
+.button-text {
+    line-height: 1;
+}
+
+/* --- Các biến thể màu sắc cho nút --- */
+.btn-primary {
+    background-color: var(--primary-bg);
+    color: var(--primary-text);
+    border-color: var(--primary-bg);
+}
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: var(--primary-text);
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+.btn-danger:hover { background-color: #c82333; border-color: #bd2130; color: white; }
+
+.btn-success {
+    background-color: var(--success-color);
+    color: white;
+    border-color: var(--success-color);
+}
+.btn-success:hover { background-color: #218838; border-color: #1e7e34; color: white; }
+
+.btn-warning {
+    background-color: var(--warning-color);
+    color: #212529;
+    border-color: var(--warning-color);
+}
+.btn-warning:hover { background-color: #e0a800; border-color: #d39e00; color: #212529; }
+
+/* --- Kiểu dáng chung cho các ô nhập liệu và select --- */
+select {
+    padding: 8px 30px 8px 12px; /* Tăng padding phải cho icon */
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 0.95em;
+    min-width: 180px; /* Đặt chiều rộng tối thiểu */
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none; /* Bỏ giao diện mặc định trên Safari/Chrome */
+    -moz-appearance: none; /* Bỏ giao diện mặc định trên Firefox */
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+}
+select:focus {
+    border-color: var(--input-focus-border, #80bdff);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+.dark-mode select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23cccccc' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* --- Input với nút xóa --- */
+.input-with-clear-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-grow: 1; /* Để container co giãn theo không gian */
+}
+.input-with-clear-container input[type="text"] {
+    padding-right: 30px; /* Tạo không gian cho nút 'x' */
+    width: 100%; /* Đảm bảo input chiếm hết container */
+}
+.clear-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 22px;
+    color: #999;
+    line-height: 1;
+    display: none; /* Ẩn theo mặc định */
+}
+.clear-btn:hover { color: #333; }
+.dark-mode .clear-btn:hover { color: #fff; }
+
+/* --- Thanh điều hướng chung (Header & Navbar) --- */
+/* --- Kiểu dáng Checkbox tùy chỉnh --- */
+.custom-checkbox {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-left: 28px; /* Không gian cho checkbox tùy chỉnh */
+    min-height: 20px; /* Đảm bảo chiều cao tối thiểu */
+}
+
+/* Ẩn checkbox mặc định */
+.custom-checkbox input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+/* Tạo ô vuông tùy chỉnh */
+.custom-checkbox span::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 18px;
+    width: 18px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* Tạo dấu tick (ẩn theo mặc định) cho span */
+.custom-checkbox span::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    width: 5px;
+    height: 10px;
+    border: solid var(--primary-text);
+    border-width: 0 2px 2px 0;
+    transform: translateY(-60%) rotate(45deg);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+/* Khi checkbox được chọn, thay đổi màu nền của span::before */
+.custom-checkbox input:checked + span::before {
+    background-color: var(--primary-bg);
+    border-color: var(--primary-bg);
+}
+
+/* Khi checkbox được chọn, hiển thị dấu tick của span::after */
+.custom-checkbox input:checked + span::after {
+    opacity: 1;
+}
+
+/* --- Kiểu dáng Radio Button tùy chỉnh --- */
+.custom-radio {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-left: 28px;
+    min-height: 20px;
+}
+
+/* Ẩn radio button mặc định */
+.custom-radio input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+/* Tạo vòng tròn ngoài tùy chỉnh */
+.custom-radio span::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 18px;
+    width: 18px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 50%; /* Hình tròn */
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* Khi radio được chọn, thay đổi màu viền */
+.custom-radio input:checked + span::before {
+    border-color: var(--primary-bg);
+}
+
+/* Tạo chấm tròn bên trong khi được chọn */
+.custom-radio input:checked + span::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    background-color: var(--primary-bg);
+}
+
+body {
+    font-family: 'Noto Sans', sans-serif;
+    line-height: 1.6;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Tắt transition khi tải trang để tránh hiệu ứng nhấp nháy */
+body.preload * {
+    transition: none !important;
+}
+
+.app-header {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: var(--card-bg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.dark-mode .app-header {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.breadcrumbs {
+    font-size: 0.9em;
+    color: var(--text-color);
+    opacity: 0.7;
+    flex-grow: 1;
+}
+
+.breadcrumbs a {
+    color: var(--link-color);
+}
+
+.nav-menu-desktop {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.nav-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    background-color: var(--button-bg);
+    color: var(--text-color);
+    text-decoration: none; /* Bỏ gạch chân */
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.nav-item.active {
+    background-color: var(--primary-bg);
+    color: var(--primary-text);
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.nav-item:not(.active):hover {
+    background-color: var(--button-hover-bg);
+    text-decoration: none; /* Bỏ gạch chân khi hover */
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 10px;
+}
+
+#theme-toggle-desktop {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    line-height: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0; /* Đảm bảo nút tròn đều */
+    border: none; /* Bỏ viền mặc định của button */
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s ease-out;
+}
+
+#theme-toggle-desktop:hover {
+    background-color: var(--button-hover-bg);
+}
+
+#theme-toggle-desktop:active {
+    transform: scale(0.9) rotate(22deg);
+}
+
+.mobile-controls {
+    display: none;
+}
+
+#mobile-menu-overlay {
+    display: none;
+}
+
+/* --- Giao diện di động --- */
+@media (max-width: 768px) {
+    body {
+        padding-top: 20px; /* Giảm padding vì header không còn */
+        background-color: var(--card-bg);
+    }
+
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .app-header {
+        display: none; /* Ẩn hoàn toàn header trên mobile */
+    }
+
+    .mobile-controls {
+        display: flex;
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        z-index: 1002;
+        gap: 10px;
+    }
+
+    #hamburger-menu,
+    #theme-toggle {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        font-size: 20px;
+        line-height: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+        background-color: var(--card-bg);
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.2s ease-out;
+    }
+
+    #hamburger-menu:active,
+    #theme-toggle:active {
+        transform: scale(0.9);
+    }
+
+    #mobile-menu-overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s;
+    }
+
+    #mobile-menu-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .nav-menu-mobile {
+        position: fixed;
+        top: 0;
+        right: -280px; /* Bắt đầu từ ngoài màn hình */
+        width: 250px;
+        height: 100%;
+        background-color: var(--card-bg);
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+        padding: 60px 10px 10px 10px;
+        transition: right 0.3s ease;
+    }
+
+    #mobile-menu-overlay.active .nav-menu-mobile {
+        right: 0; /* Trượt vào trong */
+    }
+
+    .nav-menu-mobile .nav-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 15px;
+        margin-bottom: 5px;
+        font-size: 1.1em;
+    }
+}
