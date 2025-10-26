@@ -1,6 +1,6 @@
-# Ứng dụng Ôn tập Ngữ pháp (Review Question)
+# Ứng dụng Ôn tập Câu hỏi (Review Question)
 
-Đây là một ứng dụng web cá nhân được xây dựng để hỗ trợ việc tạo, quản lý và ôn tập các câu hỏi trắc nghiệm, đặc biệt hữu ích cho việc học ngữ pháp và luyện thi. Ứng dụng sử dụng Firebase Firestore làm cơ sở dữ liệu, cho phép lưu trữ và truy cập dữ liệu một cách linh hoạt.
+Đây là một ứng dụng web cá nhân được xây dựng để hỗ trợ việc tạo, quản lý và ôn tập các câu hỏi trắc nghiệm, đặc biệt hữu ích cho việc học Câu hỏi và luyện thi. Ứng dụng sử dụng Firebase Firestore làm cơ sở dữ liệu, cho phép lưu trữ và truy cập dữ liệu một cách linh hoạt.
 
 ## ✨ Các tính năng chính
 

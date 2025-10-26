@@ -91,7 +91,7 @@
             opacity: 0;
             transition: opacity 0.25s ease-in-out;
             /* Thêm z-index để đảm bảo modal luôn ở trên cùng */
-            z-index: 1000;
+            z-index: 1050;
         }
 
         .modal-content {
@@ -315,7 +315,7 @@
                         placeholder="Dán các câu hỏi con (1. 2. ...) vào đây..."
                         style="min-height: 150px; white-space: pre-wrap"></div>
                     <br>
-                    <button onclick="savePassage()" class="btn-primary"
+                    <button onclick="(async () => await savePassage())()" class="btn-primary"
                         title="Phân tích và xem trước bài đọc từ nội dung đã dán">⚙️
                         Lưu
                         bài đọc & các câu
@@ -743,7 +743,7 @@
             // Thay thế <div> bằng \n để xử lý như các dòng riêng biệt
             // Tách các khối dựa trên các định dạng: "1.", "50", "【50】"
             const normalizedHtml = html.replace(/<div>/g, '\n').split(/\n?\s*<br[^>]*>\s*\n?|\n/).join('\n');
-            const questionBlocks = normalizedHtml.split(/\n\s*(?=(?:【\d+】)|(?:\d+\.\s*)|(?:^\d+\s*$(?!\))))/m).filter(block => block.trim() !== '');
+            const questionBlocks = normalizedHtml.split(/\n\s*(?=(?:【\d+\s*】)|(?:\d+\.\s*)|(?:^\d+\s*$(?!\))))/m).filter(block => block.trim() !== '');
 
             questionBlocks.forEach((block) => {
                 const lines = block.trim().split('\n'); // Giữ lại các dòng trống để xử lý <br>
@@ -899,7 +899,7 @@
                         `).join('')}
                     </ul>
                     ${q.tag ? `<div style="margin-top: 8px; font-style: italic; color: #555;"><b>Tag:</b> ${q.tag}</div>` : ''}
-                    ${q.explanation ? `<div style="margin-top: 8px; padding: 5px; background-color: #e9e9e9; border-radius: 3px;"><b>Giải thích:</b> ${q.explanation}</div>` : ''}
+                    ${q.explanation ? `<div style="margin-top: 8px; padding: 5px; background-color: var(--explanation-bg); border-radius: 3px;"><b>Giải thích:</b> ${q.explanation}</div>` : ''}
                 `;
             }
         }
@@ -943,8 +943,9 @@
             if (!html) return alert("Hãy dán nội dung!");
 
             const tag = document.getElementById("questionTag").value.trim();
+            const audioURL = document.getElementById("singleAudioURL").value.trim();
             const parsed = parseQuestionsFromHTML(html);
-            const newQuestions = parsed.map(q => ({ ...q, type: 'single', tag: tag, attempts: 0, correctAttempts: 0 }));
+            const newQuestions = parsed.map(q => ({ ...q, type: 'single', tag: tag, audioURL: audioURL, attempts: 0, correctAttempts: 0 }));
 
             if (newQuestions.length === 0) {
                 alert("⚠️ Không phân tích được câu hỏi nào!");
@@ -1085,6 +1086,7 @@
         async function savePassage() {
             const passageHTML = document.getElementById("passage-text").innerHTML.trim();
             const subQuestionsHTML = document.getElementById("passage-sub-questions").innerHTML.trim();
+            const audioURL = document.getElementById("passageAudioURL").value.trim();
 
             if (!passageHTML) return alert("Vui lòng nhập nội dung bài đọc.");
             if (!subQuestionsHTML) return alert("Vui lòng nhập các câu hỏi cho bài đọc.");
@@ -1100,6 +1102,7 @@
             tempPassageData = {
                 type: 'passage',
                 passage: passageHTML,
+                audioURL: audioURL,
                 sub_questions: sub_questions,
                 attempts: 0,
                 tag: tag,
@@ -1154,11 +1157,11 @@
                             </li>
                         `).join('')}
                     </ul>
-                    ${sq.explanation ? `<div style="margin-top: 8px; padding: 5px; background-color: #f0f0f0; border-radius: 3px;"><b>Giải thích:</b> ${sq.explanation}</div>` : ''}
+                    ${sq.explanation ? `<div style="margin-top: 8px; padding: 5px; background-color: var(--explanation-bg); border-radius: 3px;"><b>Giải thích:</b> ${sq.explanation}</div>` : ''}
                 </div>
             `).join('');
 
-            document.getElementById('passagePreviewModal').style.display = 'flex';
+            document.getElementById('passagePreviewModal').classList.add('show');
         }
 
         function closeDup() {
@@ -1238,8 +1241,8 @@
             const q = questions[editIndex];
 
             if (q.type === 'passage') {
-                alert("Chức năng sửa bài đọc chưa được hỗ trợ trong phiên bản này.");
-                return;
+                await savePassageEdit(); // Gọi hàm lưu bài đọc
+                return; // Dừng hàm saveEdit tại đây
             }
 
             const updatedData = {

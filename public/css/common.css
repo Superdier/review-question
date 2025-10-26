@@ -385,15 +385,12 @@ body.preload * {
     display: none;
 }
 
-#mobile-menu-overlay {
-    display: none;
-}
-
-/* --- Giao diện di động --- */
 @media (max-width: 768px) {
+    /* --- Giao diện di động --- */
     body {
         padding-top: 20px; /* Giảm padding vì header không còn */
-        background-color: var(--card-bg);
+        /* Chuyển nền body về màu chung để đồng nhất */
+        background-color: var(--bg-color);
     }
 
     .container {
@@ -437,41 +434,46 @@ body.preload * {
         transform: scale(0.9);
     }
 
-    #mobile-menu-overlay {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s;
-    }
-
-    #mobile-menu-overlay.active {
-        opacity: 1;
-        visibility: visible;
-    }
-
     .nav-menu-mobile {
         position: fixed;
         top: 0;
         right: -280px; /* Bắt đầu từ ngoài màn hình */
         width: 250px;
         height: 100%;
-        background-color: var(--card-bg);
+        background-color: var(--bg-color); /* Đổi nền menu cho đồng bộ */
         box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
         padding: 60px 10px 10px 10px;
         transition: right 0.3s ease;
     }
+}
 
-    #mobile-menu-overlay.active .nav-menu-mobile {
-        right: 0; /* Trượt vào trong */
-    }
+/* --- Lớp phủ và Menu di động (Tách ra để dễ quản lý) --- */
+#mobile-menu-overlay {
+    display: none; /* Mặc định ẩn trên mọi màn hình */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s;
+}
 
+#mobile-menu-overlay.active {
+    display: block; /* Chỉ hiển thị khi có class active */
+    opacity: 1;
+    visibility: visible;
+}
+
+#mobile-menu-overlay.active .nav-menu-mobile {
+    right: 0; /* Trượt vào trong */
+}
+
+/* --- Giao diện di động (tiếp) --- */
+@media (max-width: 768px) {
     .nav-menu-mobile .nav-item {
         display: block;
         width: 100%;
