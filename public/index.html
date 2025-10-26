@@ -275,7 +275,6 @@
                     <div id="quick" contenteditable="true"
                         placeholder="Dán nhiều câu hỏi đơn có 正解 / 不正解..."
                         style="min-height: 200px; white-space: pre-wrap"></div>
-                    <br />
                     <button onclick="quickParse(this)" class="btn-primary"
                         title="Phân tích và xem trước các câu hỏi đơn từ nội dung đã dán">⚙️
                         Phân
@@ -292,7 +291,6 @@
                     <div id="passage-text" contenteditable="true"
                         placeholder="Dán nội dung bài đọc vào đây..."
                         style="min-height: 150px; white-space: pre-wrap"></div>
-                    <br>
                     <label for="passage-sub-questions"><b>Các câu hỏi cho bài
                             đọc:</b></label>
                     <!-- Thêm thanh công cụ định dạng cho câu hỏi của bài đọc -->
@@ -943,9 +941,8 @@
             if (!html) return alert("Hãy dán nội dung!");
 
             const tag = document.getElementById("questionTag").value.trim();
-            const audioURL = document.getElementById("singleAudioURL").value.trim();
             const parsed = parseQuestionsFromHTML(html);
-            const newQuestions = parsed.map(q => ({ ...q, type: 'single', tag: tag, audioURL: audioURL, attempts: 0, correctAttempts: 0 }));
+            const newQuestions = parsed.map(q => ({ ...q, type: 'single', tag: tag, attempts: 0, correctAttempts: 0 }));
 
             if (newQuestions.length === 0) {
                 alert("⚠️ Không phân tích được câu hỏi nào!");
@@ -1086,7 +1083,6 @@
         async function savePassage() {
             const passageHTML = document.getElementById("passage-text").innerHTML.trim();
             const subQuestionsHTML = document.getElementById("passage-sub-questions").innerHTML.trim();
-            const audioURL = document.getElementById("passageAudioURL").value.trim();
 
             if (!passageHTML) return alert("Vui lòng nhập nội dung bài đọc.");
             if (!subQuestionsHTML) return alert("Vui lòng nhập các câu hỏi cho bài đọc.");
@@ -1102,7 +1098,6 @@
             tempPassageData = {
                 type: 'passage',
                 passage: passageHTML,
-                audioURL: audioURL,
                 sub_questions: sub_questions,
                 attempts: 0,
                 tag: tag,
@@ -1178,6 +1173,7 @@
                 document.getElementById("passageEditText").innerHTML = q.passage;
                 document.getElementById("passageEditSubQuestions").innerHTML = formatSubQuestionsForEditing(q.sub_questions);
                 document.getElementById("passageEditTag").value = q.tag || "";
+                document.getElementById("passageEditAudioURL").value = q.audioURL || "";
                 document.getElementById("passageEditModal").classList.add("show");
             } else {
                 document.getElementById("editQ").innerHTML = q.question;
@@ -1239,11 +1235,6 @@
 
         async function saveEdit() {
             const q = questions[editIndex];
-
-            if (q.type === 'passage') {
-                await savePassageEdit(); // Gọi hàm lưu bài đọc
-                return; // Dừng hàm saveEdit tại đây
-            }
 
             const updatedData = {
                 question: document.getElementById("editQ").innerHTML,
