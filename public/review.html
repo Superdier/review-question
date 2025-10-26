@@ -303,21 +303,15 @@
         #button-bar .button-text {
           display: none; /* Hide text on small screens */
         }
-        /* Show the 3-dot menu container only on mobile */
-        @media (max-width: 768px) {
-            #more-options-container.active {
-                display: inline-flex;
-            }
-        }
-        /* On mobile, hide the individual buttons that are now in the menu */
-        @media (max-width: 768px) {
-            #submit-btn, #unanswered-btn, #flag-btn, #favorite-btn, #exit-btn {
-                display: none !important;
-            }
+        /* Hiển thị container của nút "Thêm tùy chọn" chỉ trên di động */
+        #more-options-container {
+            display: inline-flex;
         }
 
-
-        /* --- More Options Menu (Mobile) --- */
+        /* Ẩn các nút riêng lẻ trên di động (vì chúng đã nằm trong menu) */
+        #submit-btn, #unanswered-btn, #flag-btn, #favorite-btn, #exit-btn {
+            display: none !important;
+        }
         #more-options-container {
           position: relative; /* Anchor for the menu */
           display: none; /* Hidden by default, shown via JS and media query */
@@ -379,6 +373,12 @@
         }
         .clear-btn:hover { color: #333; }
         .dark-mode .clear-btn:hover { color: #fff; }
+      }
+
+      /* Quy tắc cho màn hình lớn hơn (Desktop) */
+      @media (min-width: 769px) {
+          /* Ẩn container của nút "Thêm tùy chọn" trên desktop */
+          #more-options-container { display: none !important; }
       }
     </style>
   </head>
@@ -470,6 +470,8 @@
         <div
           id="score"
           style="margin-bottom: 15px; font-size: 1.1em; font-weight: bold"></div>
+        <!-- THÊM MỚI: Container cho trình phát audio -->
+        <div id="audio-container" style="margin-bottom: 15px;"></div>
         <div id="passage-content" style="display: none"></div>
         <div id="quiz"></div>
         <div
@@ -980,10 +982,8 @@
         document
           .getElementById("flag-btn")
           .classList.toggle("active", !!currentQuestion.isFlagged);
-        // Cập nhật trạng thái nút Gắn sao
-        document
-          .getElementById("favorite-btn")
-          .classList.toggle("active", !!currentQuestion.isFavorite);
+        // Cập nhật trạng thái các nút Gắn sao
+        updateFavoriteButtonsUI(!!currentQuestion.isFavorite);
 
         updateStatusBar();
         // Nếu đã trả lời, hiển thị lại trạng thái cũ
@@ -1149,18 +1149,16 @@
         if (!currentQuestion || !currentQuestion.id) return;
 
         const newFavoriteStatus = !currentQuestion.isFavorite;
-
-        // Cập nhật UI ngay lập tức
         currentQuestion.isFavorite = newFavoriteStatus;
-        document
-          .getElementById("favorite-btn")
-          .classList.toggle("active", newFavoriteStatus);
 
         // Cập nhật trong mảng allQuestions để bộ lọc hoạt động đúng
         const originalQuestion = allQuestions.find(q => q.id === currentQuestion.id);
         if (originalQuestion) {
             originalQuestion.isFavorite = newFavoriteStatus;
         }
+
+        // Cập nhật UI cho cả hai nút
+        updateFavoriteButtonsUI(newFavoriteStatus);
 
         saveQuizSession(); // Lưu lại trạng thái mới
 
@@ -1171,6 +1169,14 @@
         } catch (error) {
             console.error("Lỗi khi cập nhật trạng thái yêu thích:", error);
         }
+      }
+
+      // Hàm helper để cập nhật UI cho các nút Gắn sao
+      function updateFavoriteButtonsUI(isFavorite) {
+          const favBtnDesktop = document.getElementById("favorite-btn");
+          const favBtnMobile = document.getElementById("favorite-btn-menu");
+          if (favBtnDesktop) favBtnDesktop.classList.toggle("active", isFavorite);
+          if (favBtnMobile) favBtnMobile.classList.toggle("active", isFavorite);
       }
 
       function markAttemptAsCounted(id) {
@@ -1768,8 +1774,8 @@
         document.getElementById("flag-btn").style.display = "inline-block";
         document.getElementById("favorite-btn").style.display = "inline-block";
         document.getElementById("exit-btn").style.display = "inline-block";
-        // Hiển thị container của nút "Thêm tùy chọn" trên di động
-        document.getElementById("more-options-container").classList.add("active");
+        // Hiển thị container của nút "Thêm tùy chọn" (CSS sẽ tự xử lý việc ẩn/hiện theo kích thước màn hình)
+        document.getElementById("more-options-container").style.display = 'inline-flex';
         document.getElementById("quiz-container").style.display = "block";
         document.getElementById("button-bar").style.display = "block";
         document.getElementById("final-result").style.display = "none";
@@ -1838,7 +1844,7 @@
             "inline-block";
           document.getElementById("favorite-btn").style.display = "inline-block";
           document.getElementById("flag-btn").style.display = "inline-block";
-          document.getElementById("more-options-container").classList.add("active");
+          document.getElementById("more-options-container").style.display = 'inline-flex';
           document.getElementById("exit-btn").style.display = "inline-block";
           document.getElementById("quiz-container").style.display = "block"; // Đã có
           document.getElementById("button-bar").style.display = "block";
