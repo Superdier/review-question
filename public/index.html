@@ -275,8 +275,8 @@
                     <div id="quick" contenteditable="true"
                         placeholder="Dán nhiều câu hỏi đơn có 正解 / 不正解..."
                         style="min-height: 200px; white-space: pre-wrap"></div>
-                    <br>
-                    <button onclick="quickParse()" class="btn-primary"
+                    <br />
+                    <button onclick="quickParse(this)" class="btn-primary"
                         title="Phân tích và xem trước các câu hỏi đơn từ nội dung đã dán">⚙️
                         Phân
                         tích & Lưu câu hỏi
@@ -929,12 +929,16 @@
         }
 
         function closeParsePreviewModal() {
-            document.getElementById('parsePreviewModal').style.display = 'none';
+            document.getElementById('parsePreviewModal').classList.remove('show');
             tempParsedQuestions = [];
+            // Kích hoạt lại nút "Phân tích" ban đầu
+            const quickParseBtn = document.querySelector('button[onclick^="quickParse"]');
+            if (quickParseBtn) quickParseBtn.disabled = false;
         }
 
         // 🔹 Phân tích nhiều câu hỏi (Đã sửa để dùng Firestore)
-        async function quickParse() {
+        async function quickParse(button) {
+            button.disabled = true; // Vô hiệu hóa nút ngay khi nhấn
             const html = document.getElementById("quick").innerHTML.trim();
             if (!html) return alert("Hãy dán nội dung!");
 
@@ -944,6 +948,7 @@
 
             if (newQuestions.length === 0) {
                 alert("⚠️ Không phân tích được câu hỏi nào!");
+                button.disabled = false; // Kích hoạt lại nếu không có gì để phân tích
                 return;
             }
 
@@ -952,6 +957,7 @@
         }
 
         async function confirmQuickParse(button) {
+            const quickParseBtn = document.querySelector('button[onclick^="quickParse"]');
             button.disabled = true;
             button.textContent = 'Đang xử lý...';
 
@@ -967,8 +973,6 @@
 
             if (selectedQuestions.length === 0) {
                 alert("Bạn chưa chọn câu hỏi nào để lưu.");
-                button.disabled = false;
-                button.textContent = '✅ Xác nhận & Lưu các câu đã chọn';
                 return;
             }
             const current = questions; // Dùng biến questions đã load từ Firestore
@@ -989,6 +993,7 @@
                 }
             }
 
+        try {
             if (duplicates.length > 0) {
                 tempDup = { duplicates, unique }; // Không cần current vì đã có ID
                 const list = document.getElementById("dupList");
@@ -1003,23 +1008,23 @@
                 document.getElementById("dupModal").style.display = "flex";
             } else {
                 // Lưu tất cả câu hỏi mới vào Firestore
-                try {
-                    await Promise.all(unique.map(q => questionsCollection.add({
-                        ...q,
-                        timestamp: serverTimestamp()
-                    })));
-                    alert(`✅ Đã thêm ${unique.length} câu hỏi mới (giữ định dạng HTML).`);
-                    closeParsePreviewModal();
-                    await loadQuestions(); // Tải lại danh sách
-                } catch (error) {
-                    console.error("Lỗi khi lưu câu hỏi duy nhất:", error);
-                    alert("Đã xảy ra lỗi khi lưu câu hỏi. Vui lòng thử lại.");
-                }
+                await Promise.all(unique.map(q => questionsCollection.add({
+                    ...q,
+                    timestamp: serverTimestamp()
+                })));
+                alert(`✅ Đã thêm ${unique.length} câu hỏi mới (giữ định dạng HTML).`);
+                closeParsePreviewModal();
+                await loadQuestions(); // Tải lại danh sách
             }
-
-            // Kích hoạt lại nút sau khi xử lý xong (kể cả khi mở modal trùng lặp)
+        } catch (error) {
+            console.error("Lỗi khi lưu câu hỏi duy nhất:", error);
+            alert("Đã xảy ra lỗi khi lưu câu hỏi. Vui lòng thử lại.");
+        } finally {
+            // Đảm bảo các nút được kích hoạt lại
             button.disabled = false;
             button.textContent = '✅ Xác nhận & Lưu các câu đã chọn';
+            if (quickParseBtn) quickParseBtn.disabled = false;
+        }
         }
 
         async function confirmDup(button) {
@@ -1070,7 +1075,7 @@
             } catch (error) {
                 console.error("Lỗi khi xác nhận trùng lặp:", error);
                 alert("Đã xảy ra lỗi. Vui lòng thử lại.");
-            } finally {
+            } finally { // Đảm bảo nút được kích hoạt lại
                 button.disabled = false;
                 button.textContent = '✅ Xác nhận';
             }
@@ -1106,8 +1111,11 @@
             populateAndShowPreviewModal();
         }
 
-        async function confirmSavePassage() {
+        async function confirmSavePassage(button) {
             if (!tempPassageData) return;
+
+            button.disabled = true;
+            button.textContent = 'Đang lưu...';
 
             const passageData = {
                 ...tempPassageData,
@@ -1124,6 +1132,9 @@
             } catch (error) {
                 console.error("Lỗi khi lưu bài đọc:", error);
                 alert("Đã xảy ra lỗi khi lưu bài đọc. Vui lòng kiểm tra console.");
+            } finally {
+                button.disabled = false;
+                button.textContent = '✅ Xác nhận & Lưu';
             }
         }
 
