@@ -66,6 +66,26 @@
             background-color: var(--single-header-bg);
             text-align: left;
         }
+
+        /* --- Thêm style cho bảng được dán vào --- */
+        [contenteditable] table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1em 0;
+            border: 1px solid var(--border-color);
+        }
+        [contenteditable] th,
+        [contenteditable] td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+        }
+        [contenteditable] th {
+            background-color: var(--bg-color);
+            font-weight: bold;
+        }
+
+
         .multi-select-highlight {
             background-color: #fff8b9;
             /* Màu vàng để highlight */
@@ -127,7 +147,7 @@
             margin: 4px 0 10px 0;
             padding: 8px;
             box-sizing: border-box;
-            border: 1px solid var(--input-border);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             background-color: var(--input-bg);
             color: var(--text-color);
@@ -324,10 +344,35 @@
                 </div>
             </div>
 
-            <h2>📋 Danh sách câu hỏi</h2>
-            <div class="input-with-clear-container"
-                style="margin-bottom: 10px;">
-                <input type="text" id="searchInput"
+            <h2 style="margin-top: 40px;">📚 Danh sách bài đọc</h2>
+             <div>
+                <div style="overflow-x: auto; margin-top: 15px;">
+                    <table id="passage-questions-tbl">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;">
+                                    <label class="custom-checkbox"
+                                        title="Chọn tất cả bài đọc"><input type="checkbox"
+                                            id="select-all-passages"><span></span></label>
+                                </th>
+                                <th style="width: 30px;">⭐</th>
+                                <th>#</th>
+                                <th>Nội dung bài đọc</th>
+                                <th>Tag</th>
+                                <th>Số câu con</th>
+                                <th>Thống kê (Đúng/Lần làm)</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <h2>📝 Danh sách câu hỏi đơn</h2>
+            <div>
+                <div class="input-with-clear-container" style="margin-bottom: 10px;">
+                    <input type="text" id="searchInput" oninput="render()"
                     placeholder="Tìm kiếm trong câu hỏi, đáp án, tag..."
                     style="width: 100%; padding: 8px; box-sizing: border-box;">
                 <span id="clear-search-btn" class="clear-btn"
@@ -337,8 +382,7 @@
                 <label class="custom-checkbox"
                     style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
                     <input type="checkbox" id="show-favorites-only"
-                        onchange="render()"><span>Chỉ hiển thị câu gắn
-                        sao</span>
+                        onchange="render()"><span>Chỉ hiển thị câu gắn sao</span>
                 </label>
                 <span
                     style="border-left: 1px solid var(--border-color); margin: 0 10px;"></span>
@@ -352,7 +396,7 @@
                     bộ</button>
             </div>
             <div style="overflow-x: auto; margin-top: 15px;">
-                <table id="tbl">
+                <table id="single-questions-tbl">
                     <thead>
                         <tr>
                             <th style="width: 30px;">
@@ -605,8 +649,10 @@
         function render() {
             const searchTerm = document.getElementById("searchInput")?.value.toLowerCase() || "";
             const showFavoritesOnly = document.getElementById("show-favorites-only")?.checked || false;
-            const tbody = document.querySelector("#tbl tbody");
-            tbody.innerHTML = "";
+            const singleTbody = document.querySelector("#single-questions-tbl tbody");
+            const passageTbody = document.querySelector("#passage-questions-tbl tbody");
+            singleTbody.innerHTML = "";
+            passageTbody.innerHTML = "";
 
             let filteredQuestions = questions;
 
@@ -638,27 +684,15 @@
                 return contentToSearch.replace(/<[^>]+>/g, "").toLowerCase().includes(searchTerm);
             });
 
-            // Tách thành 2 nhóm
-            // ... (phần này không thay đổi)
+            // Tách thành 2 nhóm và render vào các bảng tương ứng
             const passages = filteredQuestions.filter(q => q.type === 'passage');
             const singles = filteredQuestions.filter(q => q.type !== 'passage');
 
-            // Hiển thị nhóm Bài đọc
-            if (passages.length > 0) {
-                const headerRow = tbody.insertRow();
-                headerRow.innerHTML = `<th colspan="8" class="passage-header">📚 Bài đọc (${passages.length})</th>`;
-                passages.forEach((q, index) => renderRow(q, index));
-            }
-
-            // Hiển thị nhóm Câu hỏi đơn
-            if (singles.length > 0) {
-                const headerRow = tbody.insertRow();
-                headerRow.innerHTML = `<th colspan="8" class="single-header">📝 Câu hỏi đơn (${singles.length})</th>`;
-                singles.forEach((q, index) => renderRow(q, index));
-            }
+            passages.forEach((q, index) => renderRow(q, index, passageTbody));
+            singles.forEach((q, index) => renderRow(q, index, singleTbody));
 
             // Hàm phụ để render một dòng
-            function renderRow(q, displayIndex) {
+            function renderRow(q, displayIndex, targetTbody) {
                 // Tìm index gốc của câu hỏi trong mảng `questions` để các hàm sửa/xóa hoạt động đúng
                 const originalIndex = questions.findIndex(originalQ => originalQ.id === q.id);
                 if (originalIndex === -1) return; // Bỏ qua nếu không tìm thấy
@@ -679,7 +713,7 @@
                             <div>${q.passage.substring(0, 150)}... (${q.sub_questions.length} câu hỏi)</div>
                         </td>
                         <td>${q.tag || ""}</td>
-                        <td>-</td>
+                        <td style="text-align: center;">${q.sub_questions.length}</td>
                         <td style="text-align: center;">${q.correctAttempts || 0}/${totalAttemptedSubQuestions}</td>
                         <td><button onclick="openEdit(${originalIndex})">Sửa</button><button onclick="del(${originalIndex})">Xóa</button></td>`;
                 } else { // Mặc định là câu hỏi đơn
@@ -695,7 +729,7 @@
                         <td style="text-align: center;">${q.correctAttempts || 0}/${q.attempts || 0}</td>
                         <td><button onclick="openEdit(${originalIndex})">Sửa</button><button onclick="del(${originalIndex})">Xóa</button></td>`;
                 }
-                tbody.appendChild(tr);
+                targetTbody.appendChild(tr);
             }
 
             // Gắn lại sự kiện cho các checkbox sau khi render
@@ -1173,7 +1207,6 @@
                 document.getElementById("passageEditText").innerHTML = q.passage;
                 document.getElementById("passageEditSubQuestions").innerHTML = formatSubQuestionsForEditing(q.sub_questions);
                 document.getElementById("passageEditTag").value = q.tag || "";
-                document.getElementById("passageEditAudioURL").value = q.audioURL || "";
                 document.getElementById("passageEditModal").classList.add("show");
             } else {
                 document.getElementById("editQ").innerHTML = q.question;
@@ -1430,11 +1463,77 @@
             }
         }
 
+        // Hàm mới để làm sạch HTML được dán từ Word
+        function sanitizeHtml(html) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            // Các thẻ HTML được phép giữ lại
+            const allowedTags = new Set([
+                'b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del', // Định dạng cơ bản: đậm, nghiêng, gạch chân, gạch ngang
+                'p', 'br', 'div', 'span', 'ul', 'ol', 'li', // Cấu trúc văn bản: đoạn văn, xuống dòng, khối, danh sách
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6', // Tiêu đề
+                'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', // Bảng
+                'a', // Liên kết
+                // 'img' // Có thể thêm nếu muốn giữ hình ảnh, nhưng cần xử lý thuộc tính src
+            ]);
+
+            // Hàm đệ quy để làm sạch từng nút trong cây DOM
+            function cleanNode(node) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tagName = node.tagName.toLowerCase();
+
+                    // Xóa các thuộc tính không mong muốn
+                    Array.from(node.attributes).forEach(attr => {
+                        // Giữ lại các thuộc tính cần thiết cho bảng và liên kết
+                        if ((tagName === 'td' || tagName === 'th') && (attr.name === 'colspan' || attr.name === 'rowspan')) {
+                            // Giữ colspan/rowspan cho ô bảng
+                        } else if (tagName === 'a' && attr.name === 'href') {
+                            // Giữ href cho thẻ <a>
+                        }
+                        // else if (tagName === 'img' && attr.name === 'src') {
+                        //     // Giữ src cho thẻ <img>
+                        // }
+                        else {
+                            node.removeAttribute(attr.name); // Xóa tất cả các thuộc tính khác (style, class, id, v.v.)
+                        }
+                    });
+
+                    // Loại bỏ các thẻ không được phép, thay thế bằng nội dung bên trong của chúng
+                    if (!allowedTags.has(tagName)) {
+                        while (node.firstChild) {
+                            node.parentNode.insertBefore(node.firstChild, node);
+                        }
+                        node.parentNode.removeChild(node);
+                        return; // Nút đã bị xóa, không cần xử lý con của nó nữa
+                    }
+                }
+                // Đệ quy xử lý các nút con
+                Array.from(node.childNodes).forEach(cleanNode);
+            }
+            cleanNode(tempDiv); // Bắt đầu làm sạch từ nút gốc
+            return tempDiv.innerHTML; // Trả về HTML đã được làm sạch
+        }
+
         // 🔹 Xử lý dán (paste) để loại bỏ định dạng không mong muốn
         function handlePaste(e) {
+            // Ngăn chặn hành vi dán mặc định của trình duyệt
             e.preventDefault();
-            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            document.execCommand('insertText', false, text);
+
+            // Lấy clipboard data
+            const clipboardData = (e.originalEvent || e).clipboardData;
+
+            // Ưu tiên lấy nội dung HTML. Nếu có, dán nó.
+            // Điều này sẽ giữ lại các định dạng như bảng, in đậm, v.v.
+            let pastedHtml = clipboardData.getData('text/html'); // Lấy nội dung HTML
+            if (pastedHtml) pastedHtml = sanitizeHtml(pastedHtml); // Làm sạch HTML trước khi dán
+            if (pastedHtml) {
+                document.execCommand('insertHTML', false, pastedHtml);
+            } else {
+                // Nếu không có HTML, dán dưới dạng văn bản thuần
+                const pastedText = clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, pastedText);
+            }
         }
 
         function startFilteredReview() {
@@ -1513,7 +1612,7 @@
         searchInput.addEventListener("input", () => {
             // Hiển thị hoặc ẩn nút 'x'
             clearSearchBtn.style.display = searchInput.value ? 'block' : 'none';
-            render(); // Gọi lại hàm render khi có thay đổi
+            // render() sẽ được gọi bởi oninput trên thẻ input
         });
 
         clearSearchBtn.addEventListener('click', () => {
@@ -1526,18 +1625,34 @@
         // --- Logic xóa hàng loạt ---
         function attachCheckboxListeners() {
             const selectAllCheckbox = document.getElementById('select-all-questions');
-            const questionCheckboxes = document.querySelectorAll('.question-checkbox');
+            const selectAllPassagesCheckbox = document.getElementById('select-all-passages');
+            const singleQuestionCheckboxes = document.querySelectorAll('#single-questions-tbl .question-checkbox');
+            const passageCheckboxes = document.querySelectorAll('#passage-questions-tbl .question-checkbox');
 
             if (selectAllCheckbox) {
                 selectAllCheckbox.addEventListener('change', (e) => {
-                    questionCheckboxes.forEach(cb => {
+                    singleQuestionCheckboxes.forEach(cb => {
+                        cb.checked = e.target.checked;
+                    });
+                    updateBulkActionUI();
+                });
+            }
+            if (selectAllPassagesCheckbox) {
+                selectAllPassagesCheckbox.addEventListener('change', (e) => {
+                    passageCheckboxes.forEach(cb => {
                         cb.checked = e.target.checked;
                     });
                     updateBulkActionUI();
                 });
             }
 
-            questionCheckboxes.forEach(cb => {
+            singleQuestionCheckboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    updateBulkActionUI();
+                });
+            });
+
+            passageCheckboxes.forEach(cb => {
                 cb.addEventListener('change', () => {
                     updateBulkActionUI();
                 });
@@ -1545,25 +1660,40 @@
         }
 
         function updateBulkActionUI() {
-            const questionCheckboxes = document.querySelectorAll('.question-checkbox');
             const selectedCount = document.querySelectorAll('.question-checkbox:checked').length;
             const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
-            const selectAllCheckbox = document.getElementById('select-all-questions');
 
             if (bulkDeleteBtn) {
                 bulkDeleteBtn.style.display = selectedCount > 0 ? 'inline-flex' : 'none';
             }
 
-            if (selectAllCheckbox) {
-                if (selectedCount === 0) {
-                    selectAllCheckbox.checked = false;
-                    selectAllCheckbox.indeterminate = false;
-                } else if (selectedCount === questionCheckboxes.length) {
-                    selectAllCheckbox.checked = true;
-                    selectAllCheckbox.indeterminate = false;
+            // Cập nhật trạng thái cho checkbox "Chọn tất cả" của câu hỏi đơn
+            updateSelectAllState('select-all-questions', '#single-questions-tbl .question-checkbox');
+            // Cập nhật trạng thái cho checkbox "Chọn tất cả" của bài đọc
+            updateSelectAllState('select-all-passages', '#passage-questions-tbl .question-checkbox');
+        }
+
+        // Hàm helper để cập nhật trạng thái của một checkbox "Chọn tất cả"
+        function updateSelectAllState(selectAllId, checkboxesSelector) {
+            const selectAll = document.getElementById(selectAllId);
+            if (!selectAll) return;
+
+            const allCheckboxes = document.querySelectorAll(checkboxesSelector);
+            const selectedCheckboxes = document.querySelectorAll(`${checkboxesSelector}:checked`);
+
+            if (allCheckboxes.length === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else {
+                if (selectedCheckboxes.length === 0) {
+                    selectAll.checked = false;
+                    selectAll.indeterminate = false;
+                } else if (selectedCheckboxes.length === allCheckboxes.length) {
+                    selectAll.checked = true;
+                    selectAll.indeterminate = false;
                 } else {
-                    selectAllCheckbox.checked = false;
-                    selectAllCheckbox.indeterminate = true;
+                    selectAll.checked = false;
+                    selectAll.indeterminate = true;
                 }
             }
         }
