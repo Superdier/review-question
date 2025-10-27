@@ -327,6 +327,17 @@
             const favoritedQuestions = filteredQuestions.filter(q => q.isFavorite).length;
 
             let totalCorrect = 0;
+            let totalTimeTaken = 0;
+            let singleQuestionsWithTime = 0;
+
+            filteredQuestions.forEach(q => {
+                if (q.type !== 'passage' && q.timeTaken > 0) {
+                    totalTimeTaken += q.timeTaken;
+                    singleQuestionsWithTime++;
+                }
+            });
+            const averageTime = singleQuestionsWithTime > 0 ? (totalTimeTaken / singleQuestionsWithTime).toFixed(1) : 0;
+
             let totalPossibleAttempts = 0;
 
             filteredQuestions.forEach(q => {
@@ -348,6 +359,7 @@
                 <div class="stat-item"><div class="icon">✍️</div><div class="value">${attemptedQuestions}</div><div class="label">Câu đã làm</div></div>
                 <div class="stat-item"><div class="icon">⭐</div><div class="value">${favoritedQuestions}</div><div class="label">Câu đã gắn sao</div></div>
                 <div class="stat-item"><div class="icon">🎯</div><div class="value">${overallAccuracy}%</div><div class="label">Tỷ lệ đúng chung</div></div>
+                <div class="stat-item"><div class="icon">⏱️</div><div class="value">${averageTime}s</div><div class="label">TG làm bài TB (câu đơn)</div></div>
             `;
         }
 

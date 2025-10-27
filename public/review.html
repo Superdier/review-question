@@ -280,6 +280,21 @@
         font-size: 1.1em;
       }
 
+      #timer-display {
+          font-size: 1.5em;
+          font-weight: bold;
+          color: var(--primary-bg);
+          text-align: center;
+          margin-bottom: 15px;
+          padding: 5px 10px;
+          background-color: var(--explanation-bg);
+          border-radius: 6px;
+          min-width: 80px;
+          display: inline-block;
+          position: absolute;
+          right: 20px;
+      }
+
       /* Responsive adjustments for mobile */
       @media (max-width: 768px) {
         .settings-group,
@@ -463,6 +478,27 @@
             </label>
           </div>
         </div>
+        <div class="settings-group">
+          <label>Cài đặt thời gian:</label>
+          <div class="review-mode-options">
+            <label class="custom-checkbox">
+              <input type="checkbox" id="enable-single-timer" checked />
+              <span>Bật đếm ngược cho câu hỏi đơn:</span>
+            </label>
+            <input type="number" id="single-timer-seconds" value="30" min="5"
+              style="width: 70px;" />
+            <span>giây</span>
+          </div>
+          <div class="review-mode-options" style="margin-top: 10px;">
+            <label class="custom-checkbox">
+              <input type="checkbox" id="enable-passage-timer" />
+              <span>Bật đếm ngược cho bài đọc:</span>
+            </label>
+            <input type="number" id="passage-timer-minutes" value="5" min="1"
+              style="width: 70px;" disabled />
+            <span>phút</span>
+          </div>
+        </div>
       </div>
 
       <div id="quiz-container" style="display: none">
@@ -471,6 +507,7 @@
           id="score"
           style="margin-bottom: 15px; font-size: 1.1em; font-weight: bold"></div>
         <div id="passage-content" style="display: none"></div>
+        <div id="timer-display" style="display: none;"></div>
         <div id="quiz"></div>
         <div
           id="edit-button-container"
@@ -480,6 +517,7 @@
       <div id="final-result" style="display: none">
         <h3>🎉 Hoàn thành!</h3>
         <p id="final-score" style="font-size: 1.2em"></p>
+        <p id="average-time-stat" style="font-style: italic;"></p>
         <label class="custom-checkbox"
           style="margin: 10px 0; display: inline-flex">
           <input
@@ -741,6 +779,9 @@
       let index = 0;
       let correctCount = 0;
       let incorrectCount = 0;
+      let timerInterval;
+      let questionStartTime;
+      let singleQuestionTimes = [];
 
       let isMultiSelectMode = false;
       // Khôi phục phiên làm bài nếu có
@@ -829,6 +870,16 @@
               document.getElementById('tag-filter').disabled = !e.target.checked;
               updateFilter();
           });
+          document.getElementById('enable-passage-timer').addEventListener('change', (e) => {
+              document.getElementById('passage-timer-minutes').disabled = !e.target.checked;
+          });
+          document.getElementById('enable-single-timer').addEventListener('change', (e) => {
+              document.getElementById('single-timer-seconds').disabled = !e.target.checked;
+          });
+
+
+          // Khởi tạo hiển thị nút xóa
+          clearSearchBtn.style.display = searchInput.value ? 'block' : 'none';
 
 
           // Cập nhật bộ lọc lần đầu
@@ -956,6 +1007,10 @@
         return arr.sort(() => Math.random() - 0.5);
       }
 
+      function stopTimer() {
+        clearInterval(timerInterval);
+      }
+
       function show() {
         // Thêm kiểm tra an toàn ở đầu hàm
         if (quizQuestions.length === 0 || index >= quizQuestions.length) {
@@ -965,6 +1020,9 @@
           document.getElementById("next-btn").style.display = "none";
           return;
         }
+
+        // Dừng timer cũ và bắt đầu timer mới
+        stopTimer();
 
         const passageContentDiv = document.getElementById("passage-content");
         passageContentDiv.style.display = "none";
@@ -1016,6 +1074,7 @@
         questionTitle.innerHTML = `Câu ${index + 1}/${
           quizQuestions.length
         }: ${currentQuestion.question}${tagDisplay}`;
+        questionTitle.style.paddingRight = '100px'; // Tạo không gian cho timer
         quizDiv.innerHTML = "";
         quizDiv.appendChild(questionTitle);
 
@@ -1058,6 +1117,9 @@
         editButton.onclick = () => openEditModal(index); // Pass the current index
           editButtonContainer.appendChild(editButton);
         }
+
+        // Bắt đầu timer cho câu hỏi hiện tại
+        startTimerForCurrentQuestion();
       }
 
       function check(i, correct, btn) {
@@ -1065,6 +1127,14 @@
         const questionId = currentQuestion.id; // ID của câu hỏi đơn hoặc ID của bài đọc cha
 
         // Lưu trạng thái trả lời
+        stopTimer(); // Dừng đồng hồ đếm ngược
+        const timeTaken = (Date.now() - questionStartTime) / 1000; // tính bằng giây
+
+        // Chỉ lưu thời gian cho câu hỏi đơn
+        if (!currentQuestion.isSubQuestion) {
+            singleQuestionTimes.push(timeTaken);
+            currentQuestion.timeTaken = timeTaken; // Lưu vào đối tượng câu hỏi
+        }
         currentQuestion.userAnswerIndex = i;
         const wasCorrect = i === correct;
         currentQuestion.isCorrect = wasCorrect;
@@ -1224,6 +1294,7 @@
         document.getElementById("start-btn").style.display = "inline-block";
         document.getElementById("start-btn").textContent = "🎲 Làm lại";
 
+        document.getElementById("timer-display").style.display = "none";
         const total = quizQuestions.length;
         const percentage =
           total > 0 ? ((correctCount / total) * 100).toFixed(1) : 0;
@@ -1231,6 +1302,15 @@
         document.getElementById("final-score").innerHTML = `
           Bạn đã trả lời đúng <b>${correctCount}/${total}</b> câu hỏi (${percentage}%).
         `;
+
+        // Tính và hiển thị thời gian trung bình
+        if (singleQuestionTimes.length > 0) {
+            const totalTime = singleQuestionTimes.reduce((acc, time) => acc + time, 0);
+            const averageTime = (totalTime / singleQuestionTimes.length).toFixed(1);
+            document.getElementById("average-time-stat").textContent = `⏱️ Thời gian trung bình cho 1 câu hỏi đơn: ${averageTime} giây.`;
+        } else {
+            document.getElementById("average-time-stat").textContent = "";
+        }
 
         // Lọc câu hỏi dựa trên checkbox "Ẩn các câu trả lời đúng"
         const hideCorrect = document.getElementById(
@@ -1761,6 +1841,7 @@
         index = 0;
         correctCount = 0;
         incorrectCount = 0;
+        singleQuestionTimes = []; // Reset mảng thời gian
 
         document.getElementById("quiz-settings").style.display = "none";
         document.getElementById("start-btn").style.display = "none";
@@ -1773,6 +1854,7 @@
         document.getElementById("favorite-btn").style.display = "inline-block";
         document.getElementById("exit-btn").style.display = "inline-block";
         // Hiển thị container của nút "Thêm tùy chọn" (CSS sẽ tự xử lý việc ẩn/hiện theo kích thước màn hình)
+        document.getElementById("timer-display").style.display = "inline-block";
         document.getElementById("more-options-container").style.display = 'inline-flex';
         document.getElementById("quiz-container").style.display = "block";
         document.getElementById("button-bar").style.display = "block";
@@ -1881,6 +1963,47 @@
           window.location.reload();
         }
       }
+
+      // --- Logic đếm ngược thời gian ---
+      function startTimerForCurrentQuestion() {
+          const currentQuestion = quizQuestions[index];
+          const timerDisplay = document.getElementById("timer-display");
+          let duration;
+
+          if (currentQuestion.isSubQuestion) {
+            const isPassageTimerEnabled = document.getElementById('enable-passage-timer').checked;
+            if (isPassageTimerEnabled) {
+                duration = parseInt(document.getElementById('passage-timer-minutes').value) * 60;
+            } else {
+                timerDisplay.style.display = 'none';
+                return; // Không bật timer cho bài đọc
+            }
+          } else {
+            const isSingleTimerEnabled = document.getElementById('enable-single-timer').checked;
+            if (isSingleTimerEnabled) {
+                duration = parseInt(document.getElementById('single-timer-seconds').value);
+            } else {
+                timerDisplay.style.display = 'none';
+                return; // Không bật timer cho câu hỏi đơn
+            }
+          }
+
+          timerDisplay.style.display = 'inline-block';
+          questionStartTime = Date.now();
+          let timeLeft = duration;
+
+          timerInterval = setInterval(() => {
+              const minutes = Math.floor(timeLeft / 60);
+              const seconds = timeLeft % 60;
+              timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+              if (--timeLeft < 0) {
+                  stopTimer();
+                  next(); // Tự động chuyển câu khi hết giờ
+              }
+          }, 1000);
+      }
+
       // Tải dữ liệu khi trang được load
       loadAllQuestions();
     </script>
