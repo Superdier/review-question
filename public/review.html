@@ -395,6 +395,83 @@
           /* Ẩn container của nút "Thêm tùy chọn" trên desktop */
           #more-options-container { display: none !important; }
       }
+
+      /* --- Highlight & Note Toolbar --- */
+      #highlight-toolbar {
+        position: absolute;
+        display: none;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        box-shadow: var(--shadow);
+        padding: 5px;
+        z-index: 1010;
+      }
+      #highlight-toolbar button {
+        background: none;
+        border: none;
+        padding: 8px;
+        cursor: pointer;
+        font-size: 1.2em;
+      }
+      #highlight-toolbar button:hover {
+        background-color: var(--button-hover-bg);
+      }
+      #highlight-toolbar .color-palette {
+        display: flex;
+        gap: 5px;
+      }
+      #highlight-toolbar .color-swatch {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: transform 0.1s;
+      }
+      #highlight-toolbar .color-swatch:hover {
+        transform: scale(1.15);
+      }
+
+      mark {
+        background-color: #fff8b9; /* Màu vàng mặc định */
+        color: inherit;
+        padding: 1px 0;
+        border-radius: 3px;
+      }
+      /* Các màu highlight khác nhau */
+      mark[data-color="yellow"] { background-color: #fff8b9; }
+      mark[data-color="pink"]   { background-color: #ffcce7; }
+      mark[data-color="blue"]   { background-color: #cce5ff; }
+      mark[data-color="green"]  { background-color: #d4edda; }
+      mark[data-color="purple"] { background-color: #e2d9f3; }
+
+      /* Cải thiện độ tương phản cho highlight trong dark mode */
+      .dark-mode mark {
+        color: #212529; /* Chữ màu tối trên nền highlight sáng */
+      }
+
+
+      /* --- Multi-select highlight for editing --- */
+      .multi-select-highlight {
+          background-color: #cce5ff; /* Màu xanh nhạt để phân biệt với highlight đọc */
+          color: inherit;
+      }
+
+      /* --- Kiểu dáng cho nút "Chọn nhiều" khi active --- */
+      button.active[onclick*="toggleMultiSelectMode"] {
+          background-color: var(--primary-bg);
+          color: var(--primary-text);
+          border-color: var(--primary-hover);
+          box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+      }
+      /* Thay đổi icon khi active */
+      button.active[onclick*="toggleMultiSelectMode"]::before {
+          content: '✅';
+      }
+      button[onclick*="toggleMultiSelectMode"]::before {
+          content: '✨';
+      }
     </style>
   </head>
 
@@ -629,7 +706,7 @@
             style="margin-top: 2px; margin-bottom: 5px">
             <button
               type="button"
-              onclick="toggleMultiSelectMode(this, 'editQ')">
+              onclick="toggleMultiSelectMode(this, 'editQ')">              
               ✨ Chọn nhiều
             </button>
             <button type="button"
@@ -667,7 +744,7 @@
             style="margin-top: 2px; margin-bottom: 5px">
             <button
               type="button"
-              onclick="toggleMultiSelectMode(this, 'editExplanation')">
+              onclick="toggleMultiSelectMode(this, 'editExplanation')">              
               ✨ Chọn nhiều
             </button>
             <button
@@ -730,7 +807,7 @@
           <div id="toolbarPassageEdit" style="margin-bottom: 5px">
             <button
               onclick="toggleMultiSelectMode(this, 'passageEditSubQuestions')">
-              ✨ Chọn nhiều
+              ✨ Chọn nhiều              
             </button>
             <button
               onclick="formatEdit('bold', 'passageEditSubQuestions')">
@@ -762,6 +839,18 @@
           <button onclick="closeEditPassageModal()">✖ Đóng</button>
         </div>
       </div>
+    </div>
+
+    <!-- Toolbar cho chức năng highlight -->
+    <div id="highlight-toolbar">
+        <div class="color-palette">
+            <span class="color-swatch" style="background-color: #fff8b9;" onclick="applyHighlight('yellow')"></span>
+            <span class="color-swatch" style="background-color: #ffcce7;" onclick="applyHighlight('pink')"></span>
+            <span class="color-swatch" style="background-color: #cce5ff;" onclick="applyHighlight('blue')"></span>
+            <span class="color-swatch" style="background-color: #d4edda;" onclick="applyHighlight('green')"></span>
+            <span class="color-swatch" style="background-color: #e2d9f3;" onclick="applyHighlight('purple')"></span>
+        </div>
+        <button onclick="removeHighlight()" title="Xóa tô sáng">🗑️</button>
     </div>
 
     <script
@@ -1051,7 +1140,7 @@
         if (currentQuestion.isSubQuestion) {
           // Hiển thị bài đọc
           passageContentDiv.style.display = "block";
-          passageContentDiv.innerHTML = currentQuestion.passageContent;
+          passageContentDiv.innerHTML = currentQuestion.annotatedPassageContent || currentQuestion.passageContent;
         }
 
         const quizDiv = document.getElementById("quiz");
@@ -1073,7 +1162,7 @@
           : "";
         questionTitle.innerHTML = `Câu ${index + 1}/${
           quizQuestions.length
-        }: ${currentQuestion.question}${tagDisplay}`;
+        }: ${currentQuestion.annotatedQuestion || currentQuestion.question}${tagDisplay}`;
         questionTitle.style.paddingRight = '100px'; // Tạo không gian cho timer
         quizDiv.innerHTML = "";
         quizDiv.appendChild(questionTitle);
@@ -1116,10 +1205,12 @@
         editButton.innerHTML = "✏️ Sửa câu hỏi này";
         editButton.onclick = () => openEditModal(index); // Pass the current index
           editButtonContainer.appendChild(editButton);
+          // Ẩn đồng hồ đếm ngược vì câu hỏi đã được trả lời
+          document.getElementById("timer-display").style.display = "none";
+        } else {
+          // Bắt đầu timer cho câu hỏi hiện tại chỉ khi nó chưa được trả lời
+          startTimerForCurrentQuestion();
         }
-
-        // Bắt đầu timer cho câu hỏi hiện tại
-        startTimerForCurrentQuestion();
       }
 
       function check(i, correct, btn) {
@@ -1470,6 +1561,10 @@
       }
 
       async function saveEdit() {
+        // Xóa các highlight của chế độ "Chọn nhiều" trước khi lưu
+        removeHighlights('editQ');
+        removeHighlights('editExplanation');
+
         const q = quizQuestions[index];
         if (!q || !q.id) return alert("Lỗi: Không tìm thấy ID câu hỏi.");
 
@@ -1520,6 +1615,10 @@
       }
 
       async function savePassageEdit() {
+        // Xóa các highlight của chế độ "Chọn nhiều" trước khi lưu
+        removeHighlights('passageEditText');
+        removeHighlights('passageEditSubQuestions');
+
         const currentSubQuestion = quizQuestions[index];
         if (!currentSubQuestion.isSubQuestion) return;
 
@@ -1585,7 +1684,23 @@
 
       function formatEdit(cmd, targetId) {
         const targetDiv = document.getElementById(targetId);
-        document.execCommand(cmd, false, null);
+        const highlighted = targetDiv.querySelectorAll(".multi-select-highlight");
+
+        if (isMultiSelectMode && highlighted.length > 0) {
+            document.execCommand("styleWithCSS", false, false);
+            highlighted.forEach((span) => {
+                const range = document.createRange();
+                range.selectNodeContents(span);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                document.execCommand(cmd, false, null);
+                selection.removeAllRanges();
+            });
+            removeHighlights(targetId); // Xóa highlight sau khi áp dụng
+        } else {
+            document.execCommand(cmd, false, null);
+        }
         targetDiv.focus();
       }
 
@@ -1630,14 +1745,16 @@
         selection.removeAllRanges();
       }
 
-      function removeHighlights(targetId) {
-        const highlighted = document.querySelectorAll(
-          `#${targetId} .multi-select-highlight`
-        );
+      function removeHighlights(targetId = null) {
+        const selector = targetId ? `#${targetId} .multi-select-highlight` : '.multi-select-highlight';
+        const highlighted = document.querySelectorAll(selector);
         highlighted.forEach((span) => {
           span.replaceWith(...span.childNodes);
         });
-        document.getElementById(targetId)?.normalize();
+        const targetDiv = document.getElementById(targetId);
+        if (targetDiv) {
+            targetDiv.normalize(); // Gộp các text node liền kề
+        }
       }
 
             // --- More Options Menu Logic ---
@@ -2004,8 +2121,109 @@
           }, 1000);
       }
 
+      // --- Chức năng Highlight và Ghi chú ---
+      const highlightToolbar = document.getElementById('highlight-toolbar');
+      let currentSelection = null;
+
+      function showHighlightToolbar(x, y, forRemovalOnly = false) {
+        highlightToolbar.style.left = `${x}px`;
+        highlightToolbar.style.top = `${y}px`;
+        highlightToolbar.style.display = 'block';
+
+        // Ẩn/hiện bảng màu hoặc nút xóa tùy theo ngữ cảnh
+        highlightToolbar.querySelector('.color-palette').style.display = forRemovalOnly ? 'none' : 'flex';
+        highlightToolbar.querySelector('button[onclick="removeHighlight()"]').style.display = 'inline-block';
+      }
+
+      function hideHighlightToolbar() {
+        highlightToolbar.style.display = 'none';
+        currentSelection = null;
+      }
+
+      function handleTextSelection(event) {
+        const selection = window.getSelection();
+        if (selection.isCollapsed) {
+          hideHighlightToolbar();
+          return;
+        }
+
+        // Chỉ hiển thị toolbar nếu vùng chọn nằm trong khu vực cho phép
+        const passageContainer = document.getElementById('passage-content');
+        const questionContainer = document.getElementById('quiz');
+        const range = selection.getRangeAt(0);
+        const container = range.commonAncestorContainer;
+
+        if (passageContainer.contains(container) || questionContainer.contains(container)) {
+            currentSelection = selection.getRangeAt(0).cloneRange();
+            const rect = range.getBoundingClientRect();
+            showHighlightToolbar(rect.left + window.scrollX, rect.top + window.scrollY - highlightToolbar.offsetHeight - 5, false);
+        } else {
+            hideHighlightToolbar();
+        }
+      }
+
+      function applyHighlight(color) {
+        if (!currentSelection) return;
+
+        const mark = document.createElement('mark');
+        mark.id = `highlight-${Date.now()}`; // ID duy nhất
+        mark.dataset.color = color; // Gán màu đã chọn
+        try {
+            currentSelection.surroundContents(mark);
+            updateQuestionContentAfterAnnotation();
+        } catch (e) {
+            console.warn("Không thể bao bọc vùng chọn, có thể do chọn qua nhiều thẻ HTML khác nhau.", e);
+        }
+        hideHighlightToolbar();
+      }
+
+      function removeHighlight(markElement = null) {
+        // This function was left empty in the previous diff, it should be here.
+        // The logic was mistakenly placed inside applyHighlight.
+      }
+
+      function updateQuestionContentAfterAnnotation() {
+          const currentQ = quizQuestions[index];
+          if (currentQ.isSubQuestion) {
+              currentQ.annotatedPassageContent = document.getElementById('passage-content').innerHTML;
+          }
+          currentQ.annotatedQuestion = document.querySelector('#quiz h3').innerHTML.split(': ')[1].split('<span')[0].trim();
+          saveQuizSession();
+      }
+      
+      function handleHighlightClick(event) {
+          let target = event.target;
+          // Tìm thẻ <mark> cha gần nhất
+          while (target && target.tagName !== 'MARK' && target.id !== 'quiz-container') {
+              target = target.parentNode;
+          }
+
+          if (target && target.tagName === 'MARK') {
+              event.preventDefault(); // Ngăn các hành vi mặc định khác
+              showHighlightToolbar(event.pageX + 5, event.pageY + 5, true);
+              // Gán lại sự kiện cho nút xóa để nó biết cần xóa thẻ <mark> nào
+              highlightToolbar.querySelector('button[onclick="removeHighlight()"]').onclick = () => removeHighlight(target);
+          }
+      }
+
       // Tải dữ liệu khi trang được load
       loadAllQuestions();
+
+      // Gắn sự kiện cho highlight
+      document.getElementById('quiz-container').addEventListener('mouseup', handleTextSelection);
+      document.getElementById('quiz-container').addEventListener('click', handleHighlightClick);
+      document.addEventListener('mousedown', function(event) {
+          if (!highlightToolbar.contains(event.target)) {
+              hideHighlightToolbar();
+          }
+      });
+
+      // Gắn sự kiện mouseup cho các ô contenteditable trong modal sửa
+      document.getElementById('editQ').addEventListener('mouseup', handleMouseUp);
+      document.getElementById('editExplanation').addEventListener('mouseup', handleMouseUp);
+      document.getElementById('passageEditText').addEventListener('mouseup', handleMouseUp);
+      document.getElementById('passageEditSubQuestions').addEventListener('mouseup', handleMouseUp);
+
     </script>
   </body>
 </html>

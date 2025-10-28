@@ -91,10 +91,25 @@
             /* Màu vàng để highlight */
         }
 
-        #multiSelectToggle.active {
-            background-color: #a0d2ff;
-            /* Màu xanh khi chế độ được bật */
-            border-color: #6b9ac4;
+        /* Highlight cho từ khóa tìm kiếm */
+        mark {
+            background-color: #ffc107;
+            padding: 1px 2px;
+            border-radius: 3px;
+        }
+        /* --- Kiểu dáng cho nút "Chọn nhiều" khi active --- */
+        button.active[onclick*="toggleMultiSelectMode"] {
+            background-color: var(--primary-bg);
+            color: var(--primary-text);
+            border-color: var(--primary-hover);
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+        }
+        /* Thay đổi icon khi active */
+        button.active[onclick*="toggleMultiSelectMode"]::before {
+            content: '✅';
+        }
+        button[onclick*="toggleMultiSelectMode"]::before {
+            content: '✨';
         }
 
         .modal {
@@ -222,6 +237,12 @@
             align-items: center;
             justify-content: center;
         }
+        .table-scroll-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 60vh; /* Giới hạn chiều cao bảng bằng 60% chiều cao màn hình */
+            margin-top: 15px;
+        }
         #scrollTopBtn:hover {
             background-color: var(--primary-hover); /* Thêm hiệu ứng hover */
             transform: translateY(-2px); /* Hiệu ứng nhấc lên một chút */
@@ -346,7 +367,14 @@
 
             <h2 style="margin-top: 40px;">📚 Danh sách bài đọc</h2>
              <div>
-                <div style="overflow-x: auto; margin-top: 15px;">
+                <div class="input-with-clear-container" style="margin-bottom: 10px; max-width: 500px;">
+                    <input type="text" id="passageSearchInput" oninput="render()"
+                    placeholder="Tìm kiếm trong bài đọc, câu hỏi con..."
+                    style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    <span id="clear-passage-search-btn" class="clear-btn"
+                    title="Xóa">&times;</span>
+                </div>
+                <div class="table-scroll-container" id="passage-table-container">
                     <table id="passage-questions-tbl">
                         <thead>
                             <tr>
@@ -392,10 +420,10 @@
                 <button onclick="exportJSON()"
                     title="Xuất toàn bộ câu hỏi ra file JSON">💾 Xuất dữ
                     liệu</button>
-                <button onclick="clearAll()" class="btn-danger">🗑 Xóa toàn
+                <button onclick="clearAll()" class="btn-danger">🗑️ Xóa toàn
                     bộ</button>
             </div>
-            <div style="overflow-x: auto; margin-top: 15px;">
+            <div class="table-scroll-container" id="single-table-container">
                 <table id="single-questions-tbl">
                     <thead>
                         <tr>
@@ -629,12 +657,21 @@
         let editIndex = -1;
         let tempParsedQuestions = []; // Lưu các câu hỏi đã phân tích tạm thời
         let isMultiSelectMode = false;
+        
+        // Biến cho chức năng "Xem thêm"
+        const ITEMS_PER_PAGE = {
+            singles: 30,
+            passages: 15
+        };
+        let displayedCounts = {
+            singles: 0, // Sẽ được khởi tạo trong render
+            passages: 0
+        };
 
         // Tải dữ liệu từ Firestore
         async function loadQuestions() {
             try {
-                // Tải câu hỏi, sắp xếp theo timestamp mới nhất lên đầu
-                const snapshot = await questionsCollection.orderBy("timestamp", "desc").get();
+                const snapshot = await questionsCollection.orderBy("timestamp", "desc").get(); // Tải câu hỏi, sắp xếp theo timestamp mới nhất lên đầu
                 questions = snapshot.docs.map(doc => ({
                     id: doc.id, // Lưu ID của document để thao tác sửa/xóa
                     ...doc.data()
@@ -646,13 +683,20 @@
             }
         }
 
-        function render() {
+        function render(loadMoreType = null) {
             const searchTerm = document.getElementById("searchInput")?.value.toLowerCase() || "";
+            const passageSearchTerm = document.getElementById("passageSearchInput")?.value.toLowerCase() || "";
             const showFavoritesOnly = document.getElementById("show-favorites-only")?.checked || false;
             const singleTbody = document.querySelector("#single-questions-tbl tbody");
             const passageTbody = document.querySelector("#passage-questions-tbl tbody");
-            singleTbody.innerHTML = "";
-            passageTbody.innerHTML = "";
+
+            // Nếu không phải là "Xem thêm", thì reset lại toàn bộ
+            if (!loadMoreType) {
+                displayedCounts.singles = ITEMS_PER_PAGE.singles;
+                displayedCounts.passages = ITEMS_PER_PAGE.passages;
+            }
+
+            // Chỉ render lại bảng được yêu cầu khi "load more"
 
             let filteredQuestions = questions;
 
@@ -660,13 +704,15 @@
                 filteredQuestions = filteredQuestions.filter(q => q.isFavorite);
             }
 
-            filteredQuestions = filteredQuestions.filter(q => {
-                // Tìm kiếm trên nội dung text của câu hỏi, không bao gồm HTML
-                if (!q) return false;
-                let contentToSearch = "";
-                if (q.type === 'passage') {
-                    // Đối với bài đọc, tìm kiếm trong nội dung bài đọc, câu hỏi con, đáp án con, giải thích con
-                    contentToSearch = q.passage || "";
+            // Tách thành 2 nhóm TRƯỚC KHI lọc theo từ khóa
+            let passages = filteredQuestions.filter(q => q.type === 'passage');
+            let singles = filteredQuestions.filter(q => q.type !== 'passage');
+
+            // Lọc bài đọc bằng ô tìm kiếm riêng
+            if (passageSearchTerm) {
+                passages = passages.filter(q => {
+                    if (!q) return false;
+                    let contentToSearch = q.passage || "";
                     if (q.sub_questions) {
                         q.sub_questions.forEach(subQ => {
                             contentToSearch += " " + (subQ.question || "");
@@ -674,26 +720,37 @@
                             contentToSearch += " " + (subQ.explanation || "");
                         });
                     }
-                } else {
-                    // Đối với câu hỏi đơn, tìm kiếm trong nội dung câu hỏi, đáp án, giải thích
-                    contentToSearch = q.question || "";
-                    contentToSearch += " " + (q.choices ? q.choices.join(' ') : "");
-                    contentToSearch += " " + (q.tag || "");
-                    contentToSearch += " " + (q.explanation || "");
-                }
-                return contentToSearch.replace(/<[^>]+>/g, "").toLowerCase().includes(searchTerm);
-            });
+                    return contentToSearch.replace(/<[^>]+>/g, "").toLowerCase().includes(passageSearchTerm);
+                });
+            }
 
-            // Tách thành 2 nhóm và render vào các bảng tương ứng
-            const passages = filteredQuestions.filter(q => q.type === 'passage');
-            const singles = filteredQuestions.filter(q => q.type !== 'passage');
+            // Lọc câu hỏi đơn bằng ô tìm kiếm chung
+            if (searchTerm) {
+                singles = singles.filter(q => {
+                if (!q) return false;
+                    let contentToSearch = q.question || "";
+                        contentToSearch += " " + (q.choices ? q.choices.join(' ') : "");
+                        contentToSearch += " " + (q.tag || "");
+                        contentToSearch += " " + (q.explanation || "");
+                    return contentToSearch.replace(/<[^>]+>/g, "").toLowerCase().includes(searchTerm);
+                });
+            }
 
-            passages.forEach((q, index) => renderRow(q, index, passageTbody));
-            singles.forEach((q, index) => renderRow(q, index, singleTbody));
+            // Render passages (chỉ khi cần)
+            if (!loadMoreType || loadMoreType === 'passages') {
+                const passagesToRender = passages.slice(0, displayedCounts.passages);
+                passageTbody.innerHTML = ""; // Luôn render lại bảng bài đọc để đơn giản
+                passagesToRender.forEach((q, index) => renderRow(q, index, passageTbody, passageSearchTerm));
+            }
 
-            // Hàm phụ để render một dòng
-            function renderRow(q, displayIndex, targetTbody) {
-                // Tìm index gốc của câu hỏi trong mảng `questions` để các hàm sửa/xóa hoạt động đúng
+            // Render single questions (chỉ khi cần)
+            if (!loadMoreType || loadMoreType === 'singles') {
+                const singlesToRender = singles.slice(0, displayedCounts.singles);
+                singleTbody.innerHTML = ""; // Luôn render lại bảng câu hỏi đơn
+                singlesToRender.forEach((q, index) => renderRow(q, index, singleTbody, searchTerm));
+            }
+
+            function renderRow(q, displayIndex, targetTbody, termToHighlight = "") { // Tìm index gốc của câu hỏi trong mảng `questions` để các hàm sửa/xóa hoạt động đúng
                 const originalIndex = questions.findIndex(originalQ => originalQ.id === q.id);
                 if (originalIndex === -1) return; // Bỏ qua nếu không tìm thấy
 
@@ -701,6 +758,7 @@
                 const starClass = q.isFavorite ? 'favorited' : '';
                 const starIcon = q.isFavorite ? '⭐' : '☆';
                 if (q.type === 'passage' && q.sub_questions) {
+                    const passageSnippet = highlightText(q.passage.substring(0, 150), termToHighlight);
                     const totalAttemptedSubQuestions = (q.attempts || 0) * (q.totalSubQuestions || q.sub_questions.length);
                     tr.innerHTML = `
                         <td>
@@ -710,20 +768,21 @@
                         <td>${displayIndex + 1}</td>
                         <td>
                             <div style="font-weight: bold; color: #005a9e;">[BÀI ĐỌC]</div>
-                            <div>${q.passage.substring(0, 150)}... (${q.sub_questions.length} câu hỏi)</div>
+                            <div>${passageSnippet}... (${q.sub_questions.length} câu hỏi)</div>
                         </td>
                         <td>${q.tag || ""}</td>
                         <td style="text-align: center;">${q.sub_questions.length}</td>
                         <td style="text-align: center;">${q.correctAttempts || 0}/${totalAttemptedSubQuestions}</td>
                         <td><button onclick="openEdit(${originalIndex})">Sửa</button><button onclick="del(${originalIndex})">Xóa</button></td>`;
                 } else { // Mặc định là câu hỏi đơn
+                    const questionText = highlightText(q.question, termToHighlight);
                     tr.innerHTML = `
                         <td>
                             <label class="custom-checkbox"><input type="checkbox" class="question-checkbox" value="${q.id}"><span></span></label>
                         </td>
                         <td><span class="favorite-star ${starClass}" onclick="toggleFavorite(event, ${originalIndex})">${starIcon}</span></td>
                         <td>${displayIndex + 1}</td>
-                        <td>${q.question}</td>
+                        <td>${questionText}</td>
                         <td>${q.tag || ""}</td>
                         <td>${q.choices[q.correct] || ""}</td>
                         <td style="text-align: center;">${q.correctAttempts || 0}/${q.attempts || 0}</td>
@@ -734,6 +793,15 @@
 
             // Gắn lại sự kiện cho các checkbox sau khi render
             attachCheckboxListeners();
+        }
+
+        function highlightText(text, term) {
+            if (!term || !text) {
+                return text;
+            }
+            // Sử dụng biểu thức chính quy (RegExp) để thay thế không phân biệt hoa thường
+            const regex = new RegExp(`(${term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<mark>$1</mark>');
         }
 
         async function toggleFavorite(event, index) {
@@ -1398,9 +1466,27 @@
         }
 
         function clearFormatMulti(targetId = 'quick') {
-            removeHighlights(targetId);
-            document.execCommand("removeFormat", false, null);
-            document.getElementById(targetId)?.focus();
+            const targetDiv = document.getElementById(targetId);
+            if (!targetDiv) return;
+            const highlighted = targetDiv.querySelectorAll(".multi-select-highlight");
+
+            if (highlighted.length > 0) {
+                // Nếu có các vùng được chọn trong chế độ multi-select
+                highlighted.forEach((span) => {
+                    const range = document.createRange();
+                    range.selectNodeContents(span);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    document.execCommand("removeFormat", false, null);
+                    selection.removeAllRanges();
+                });
+                removeHighlights(targetId); // Xóa các vùng tô sáng sau khi hoàn thành
+            } else {
+                // Nếu không, chỉ xóa định dạng trên vùng chọn hiện tại
+                document.execCommand("removeFormat", false, null);
+            }
+            targetDiv.focus();
         }
 
         // 🔹 Chế độ chọn nhiều
@@ -1621,6 +1707,21 @@
             render(); // Cập nhật lại danh sách
             searchInput.focus(); // Trả con trỏ về ô input
         });
+        
+        // --- Logic cho nút xóa nhanh trong ô tìm kiếm BÀI ĐỌC ---
+        const passageSearchInput = document.getElementById("passageSearchInput");
+        const clearPassageSearchBtn = document.getElementById("clear-passage-search-btn");
+
+        passageSearchInput.addEventListener("input", () => {
+            clearPassageSearchBtn.style.display = passageSearchInput.value ? 'block' : 'none';
+        });
+
+        clearPassageSearchBtn.addEventListener('click', () => {
+            passageSearchInput.value = '';
+            clearPassageSearchBtn.style.display = 'none';
+            render();
+            passageSearchInput.focus();
+        });
 
         // --- Logic xóa hàng loạt ---
         function attachCheckboxListeners() {
@@ -1741,6 +1842,27 @@
                 button.textContent = '🗑️ Xác nhận xóa';
             }
         }
+
+        // --- Logic cho "Tải vô hạn" (Infinite Scroll) ---
+        const singleTableContainer = document.getElementById('single-table-container');
+        const passageTableContainer = document.getElementById('passage-table-container');
+
+        singleTableContainer.addEventListener('scroll', () => {
+            // Kiểm tra nếu cuộn gần đến cuối
+            if (singleTableContainer.scrollTop + singleTableContainer.clientHeight >= singleTableContainer.scrollHeight - 300) {
+                displayedCounts.singles += ITEMS_PER_PAGE.singles;
+                render('singles'); // Chỉ render lại bảng câu hỏi đơn
+            }
+        });
+
+        passageTableContainer.addEventListener('scroll', () => {
+            // Kiểm tra nếu cuộn gần đến cuối
+            if (passageTableContainer.scrollTop + passageTableContainer.clientHeight >= passageTableContainer.scrollHeight - 300) {
+                displayedCounts.passages += ITEMS_PER_PAGE.passages;
+                render('passages'); // Chỉ render lại bảng bài đọc
+            }
+        });
+
 
         // Tải câu hỏi khi trang được load
         loadQuestions();
