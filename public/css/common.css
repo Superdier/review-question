@@ -284,6 +284,11 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
+.container {
+    /* Thêm khoảng đệm ở dưới cùng để nội dung không bị dính vào chân trang */
+    padding-bottom: 60px;
+}
+
 /* Tắt transition khi tải trang để tránh hiệu ứng nhấp nháy */
 body.preload * {
     transition: none !important;
