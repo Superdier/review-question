@@ -312,6 +312,10 @@
                             onclick="formatMulti('strikeThrough')"><s>S</s></button>
                         <button onclick="clearFormatMulti()"
                             title="Xóa định dạng đã chọn">🧹 Clear</button>
+                        <button type="button"
+                            onclick="pasteAsPlainText(event, 'quick')"
+                            title="Dán văn bản thuần túy (không định dạng)">📄 Dán
+                            Text</button>
                     </div>
                     <div id="quick" contenteditable="true"
                         placeholder="Dán nhiều câu hỏi đơn có 正解 / 不正解..."
@@ -349,6 +353,10 @@
                         <button title="Xóa định dạng đã chọn"
                             onclick="clearFormatMulti('passage-sub-questions')">🧹
                             Clear</button>
+                        <button type="button"
+                            onclick="pasteAsPlainText(event, 'passage-sub-questions')"
+                            title="Dán văn bản thuần túy (không định dạng)">📄 Dán
+                            Text</button>
                     </div>
                     <div id="passage-sub-questions" contenteditable="true"
                         placeholder="Dán các câu hỏi con (1. 2. ...) vào đây..."
@@ -1658,6 +1666,25 @@
             const filteredIds = filteredQuestions.map(q => q.id);
             sessionStorage.setItem('filteredQuestionIds', JSON.stringify(filteredIds));
             window.location.href = './review.html';
+        }
+
+        // 🔹 Hàm mới để dán văn bản thuần túy khi nhấn nút
+        async function pasteAsPlainText(event, targetId) {
+            event.preventDefault(); // Ngăn hành vi mặc định của nút
+            const targetDiv = document.getElementById(targetId);
+            if (!targetDiv) return;
+
+            try {
+                // Sử dụng Clipboard API hiện đại để đọc văn bản
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    targetDiv.focus(); // Đảm bảo ô nhập liệu đang được focus
+                    document.execCommand('insertText', false, text);
+                }
+            } catch (err) {
+                console.error('Không thể đọc clipboard: ', err);
+                alert('Không thể truy cập clipboard. Vui lòng kiểm tra quyền của trình duyệt.');
+            }
         }
 
         // Gắn sự kiện paste cho các ô contenteditable
