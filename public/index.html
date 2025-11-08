@@ -5,6 +5,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
         <title>入力 - 文法練習</title>
         <style>
         :root {
@@ -84,7 +85,24 @@
             background-color: var(--bg-color);
             font-weight: bold;
         }
-
+        
+        /* --- Style cho hình ảnh trong ô nhập liệu --- */
+        [contenteditable] img {
+            max-width: 100%; /* Đảm bảo ảnh không tràn ra ngoài ô nhập */
+            height: auto;    /* Giữ đúng tỷ lệ */
+            cursor: pointer; /* Con trỏ chuột thành dạng bàn tay khi di qua ảnh */
+            object-fit: contain; /* Đảm bảo ảnh hiển thị đầy đủ */
+        }
+        [contenteditable] img:hover {
+            outline: 2px solid var(--primary-bg); /* Hiển thị viền khi hover */
+            box-shadow: var(--shadow);
+        }
+        /* Thêm viền cho ảnh được chọn */
+        [contenteditable] img.selected-image {
+            outline: 3px solid #007bff !important;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5) !important;
+            transition: outline 0.2s ease, box-shadow 0.2s ease;
+        }
 
         .multi-select-highlight {
             background-color: #fff8b9;
@@ -247,6 +265,33 @@
             background-color: var(--primary-hover); /* Thêm hiệu ứng hover */
             transform: translateY(-2px); /* Hiệu ứng nhấc lên một chút */
         }
+        
+        /* --- Thanh công cụ chỉnh sửa ảnh --- */
+        #image-toolbar {
+            display: none;
+            position: absolute;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 5px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        #image-toolbar button {
+            padding: 5px 8px;
+            font-size: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        #image-toolbar button:hover {
+            background: var(--primary-bg);
+            color: var(--primary-text);
+        }
     </style>
     </head>
 
@@ -313,6 +358,8 @@
                         <button onclick="clearFormatMulti()"
                             title="Xóa định dạng đã chọn">🧹 Clear</button>
                         <button type="button"
+                            onclick="showImageToolbarForSelected()" class="image-tools-trigger" disabled title="Chọn ảnh trước">📸</button>
+                        <button type="button"
                             onclick="pasteAsPlainText(event, 'quick')"
                             title="Dán văn bản thuần túy (không định dạng)">📄 Dán
                             Text</button>
@@ -332,7 +379,28 @@
 
                 <!-- Form cho bài đọc -->
                 <div id="passage-form" style="display: none; margin-top: 15px;">
-                    <label for="passage-text"><b>Nội dung bài đọc:</b></label>
+                    <label for="passage-text"><b>Nội dung bài đọc:</b></label>                    
+                    <div id="toolbarPassageText" style="margin-bottom: 5px">
+                        <button id="multiSelectTogglePassageText"
+                            title="Bật/tắt chế độ chọn nhiều để định dạng văn bản"
+                            onclick="toggleMultiSelectMode(this, 'passage-text')">✨
+                            Chọn nhiều</button>
+                        <button
+                            onclick="formatMulti('bold', 'passage-text')"><b>B</b></button>
+                        <button
+                            onclick="formatMulti('underline', 'passage-text')"><u>U</u></button>
+                        <button
+                            onclick="formatMulti('strikeThrough', 'passage-text')"><s>S</s></button>
+                        <button title="Xóa định dạng đã chọn"
+                            onclick="clearFormatMulti('passage-text')">🧹
+                            Clear</button>
+                        <button type="button"
+                            onclick="showImageToolbarForSelected()" class="image-tools-trigger" disabled title="Chọn ảnh trước">📸</button>
+                        <button type="button"
+                            onclick="pasteAsPlainText(event, 'passage-text')"
+                            title="Dán văn bản thuần túy (không định dạng)">📄 Dán
+                            Text</button>
+                    </div>
                     <div id="passage-text" contenteditable="true"
                         placeholder="Dán nội dung bài đọc vào đây..."
                         style="min-height: 150px; white-space: pre-wrap"></div>
@@ -353,6 +421,8 @@
                         <button title="Xóa định dạng đã chọn"
                             onclick="clearFormatMulti('passage-sub-questions')">🧹
                             Clear</button>
+                        <button type="button"
+                            onclick="showImageToolbarForSelected()" class="image-tools-trigger" disabled title="Chọn ảnh trước">📸</button>
                         <button type="button"
                             onclick="pasteAsPlainText(event, 'passage-sub-questions')"
                             title="Dán văn bản thuần túy (không định dạng)">📄 Dán
@@ -499,6 +569,8 @@
                             </button>
                             <button type="button" onclick="clearFormatEdit()">🧹
                                 Clear</button>
+                            <button type="button" onclick="showImageToolbarForSelected()" class="image-tools-trigger" disabled title="Chọn ảnh trước">📸</button>
+
                         </div>
 
                         <label>Đáp án 1:</label><input type="text"
@@ -569,6 +641,8 @@
                             <button
                                 onclick="clearFormatMulti('passageEditSubQuestions')">🧹
                                 Clear</button>
+                            <button type="button" onclick="showImageToolbarForSelected()" class="image-tools-trigger" disabled title="Chọn ảnh trước">📸</button>
+
                         </div>
                         <div id="passageEditSubQuestions" contenteditable="true"
                             style="min-height: 200px; white-space: pre-wrap"></div>
@@ -647,6 +721,27 @@
 
         </div> <!-- End .container -->
 
+        <!-- Toolbar cho hình ảnh -->
+        <div id="image-toolbar">
+            <button onclick="resizeImage(25)" title="Rộng 25%">25%</button>
+            <button onclick="resizeImage(50)" title="Rộng 50%">50%</button>
+            <button onclick="resizeImage(75)" title="Rộng 75%">75%</button>
+            <button onclick="resizeImage(100)" title="Rộng 100%">100%</button>
+            <button onclick="resizeImage('auto')" title="Kích thước tự động">Auto</button>
+            <span style="border-left: 1px solid var(--border-color); margin: 2px 4px;"></span>
+            <button onclick="alignImage('left')" title="Căn trái">📄⬅️</button>
+            <button onclick="alignImage('center')" title="Căn giữa">📄&lt;-&gt;📄</button>
+            <button onclick="alignImage('right')" title="Căn phải">➡️📄</button>
+            <span style="border-left: 1px solid var(--border-color); margin: 2px 4px;"></span>
+            <button onclick="openCropModal()" title="Cắt ảnh">✂️ Cắt</button>
+            <button onclick="removeImage()" title="Xóa ảnh" style="color: #dc3545;">🗑️ Xóa</button>
+        </div>
+
+        <!-- Modal để cắt ảnh -->
+        <div id="cropImageModal" class="modal">
+            <!-- Nội dung modal sẽ được tạo bằng JS -->
+        </div>
+
         <!-- Nút Lên đầu trang -->
         <button onclick="scrollToTop()" id="scrollTopBtn" title="Lên đầu trang">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -656,6 +751,8 @@
             src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
         <script
             src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+        <!-- Thêm JS cho Cropper.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
         <!-- Tải cấu hình và khởi tạo Firebase từ file riêng -->
         <script src="./js/firebase-init.js"></script>
         <script src="./js/common.js"></script>
@@ -675,6 +772,11 @@
             singles: 0, // Sẽ được khởi tạo trong render
             passages: 0
         };
+
+        // Biến cho chức năng chỉnh sửa ảnh
+        const imageToolbar = document.getElementById('image-toolbar');
+        let selectedImage = null;
+        let cropper = null;
 
         // Tải dữ liệu từ Firestore
         async function loadQuestions() {
@@ -1569,7 +1671,7 @@
                 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', // Tiêu đề
                 'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', // Bảng
                 'a', // Liên kết
-                // 'img' // Có thể thêm nếu muốn giữ hình ảnh, nhưng cần xử lý thuộc tính src
+                'img' // Cho phép thẻ hình ảnh
             ]);
 
             // Hàm đệ quy để làm sạch từng nút trong cây DOM
@@ -1584,10 +1686,9 @@
                             // Giữ colspan/rowspan cho ô bảng
                         } else if (tagName === 'a' && attr.name === 'href') {
                             // Giữ href cho thẻ <a>
+                        } else if (tagName === 'img' && (attr.name === 'src' || attr.name === 'alt' || attr.name === 'title')) {
+                            // Giữ các thuộc tính quan trọng của thẻ <img>
                         }
-                        // else if (tagName === 'img' && attr.name === 'src') {
-                        //     // Giữ src cho thẻ <img>
-                        // }
                         else {
                             node.removeAttribute(attr.name); // Xóa tất cả các thuộc tính khác (style, class, id, v.v.)
                         }
@@ -1696,10 +1797,197 @@
         document.getElementById('editExplanation').addEventListener('paste', handlePaste);
         document.getElementById('passageEditSubQuestions').addEventListener('paste', handlePaste);
         // Gắn sự kiện paste động cho các ô sửa trong modal xem trước
+        // Thêm sự kiện paste cho ô sửa bài đọc trong modal
+        document.getElementById('passageEditText').addEventListener('paste', handlePaste);
+
+        // Gắn sự kiện paste động cho các ô sửa trong modal xem trước
         document.getElementById('parsePreviewModal').addEventListener('paste', function(e) {
             if (e.target.isContentEditable) handlePaste(e);
         }, true);
 
+        // --- Chức năng chỉnh sửa hình ảnh ---
+        function handleEditorClick(event) {
+            const clickedOnImage = event.target.tagName === 'IMG';
+            
+            // Nếu click vào ảnh
+            if (clickedOnImage) {
+                // Bỏ chọn ảnh cũ nếu có
+                if (selectedImage && selectedImage !== event.target) {
+                    selectedImage.classList.remove('selected-image');
+                }
+                
+                // Chọn ảnh mới
+                selectedImage = event.target;
+                selectedImage.classList.add('selected-image');
+                
+                // Kích hoạt nút 📸
+                document.querySelectorAll('.image-tools-trigger').forEach(btn => {
+                    btn.disabled = false;
+                    btn.title = "Chỉnh sửa ảnh đã chọn";
+                });
+                
+                event.stopPropagation(); // Ngăn sự kiện lan ra ngoài
+                return;
+            }
+            
+            // Nếu click ra ngoài ảnh (vùng trống)
+            if (selectedImage) {
+                selectedImage.classList.remove('selected-image');
+                selectedImage = null;
+                
+                // Vô hiệu hóa nút 📸
+                document.querySelectorAll('.image-tools-trigger').forEach(btn => {
+                    btn.disabled = true;
+                    btn.title = "Chọn ảnh trước";
+                });
+                
+                hideImageToolbar(); // Ẩn thanh công cụ
+            }
+        }
+
+        function hideImageToolbar() {
+            imageToolbar.style.display = 'none';
+            
+            // Đảm bảo ảnh không còn được chọn khi ẩn toolbar
+            if (selectedImage) {
+                selectedImage.classList.remove('selected-image');
+                selectedImage = null;
+            }
+            
+            // Vô hiệu hóa nút 📸
+            document.querySelectorAll('.image-tools-trigger').forEach(btn => {
+                btn.disabled = true;
+                btn.title = "Chọn ảnh trước";
+            });
+            
+            // Hủy crop nếu đang mở
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+
+        // Hàm này được gọi khi người dùng click vào nút camera
+        function showImageToolbarForSelected() {
+            if (!selectedImage) return alert("Vui lòng nhấp vào một hình ảnh để chọn nó trước.");
+            showImageToolbar();
+        }
+
+        function showImageToolbar() {
+            if (!selectedImage) return;
+            const rect = selectedImage.getBoundingClientRect();
+            imageToolbar.style.left = `${rect.left + window.scrollX}px`;
+            imageToolbar.style.top = `${rect.top + window.scrollY - imageToolbar.offsetHeight - 5}px`;
+            imageToolbar.style.display = 'flex';
+        }
+
+        function resizeImage(percentage) {
+            if (!selectedImage) return;
+            if (percentage === 'auto') {
+                selectedImage.style.width = 'auto';
+            } else {
+                selectedImage.style.width = `${percentage}%`;
+            }
+            hideImageToolbar();
+        }
+
+        function alignImage(align) {
+            if (!selectedImage) return;
+            selectedImage.style.float = 'none';
+            selectedImage.style.display = 'block';
+            selectedImage.style.marginLeft = 'auto';
+            selectedImage.style.marginRight = 'auto';
+
+            if (align === 'left') {
+                selectedImage.style.float = 'left';
+                selectedImage.style.marginRight = '1em';
+                selectedImage.style.marginLeft = '0';
+            } else if (align === 'right') {
+                selectedImage.style.float = 'right';
+                selectedImage.style.marginLeft = '1em';
+                selectedImage.style.marginRight = '0';
+            }
+            hideImageToolbar();
+        }
+
+        function removeImage() {
+            if (selectedImage && confirm('Bạn có chắc muốn xóa hình ảnh này?')) {
+                selectedImage.remove();
+            }
+            hideImageToolbar();
+        }
+
+        function openCropModal() {
+            if (!selectedImage) return;
+            const cropModal = document.getElementById('cropImageModal');
+            cropModal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <h3 style="margin-top:0;">✂️ Cắt ảnh</h3>
+                        <div id="cropper-container" style="max-height: 70vh; overflow: hidden;">
+                            <img src="${selectedImage.src}" id="image-to-crop">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button onclick="applyCrop()" class="btn-primary">✅ Áp dụng</button>
+                        <button onclick="closeCropModal()">✖ Hủy</button>
+                    </div>
+                </div>
+            `;
+            cropModal.classList.add('show');
+
+            const imageToCrop = document.getElementById('image-to-crop');
+            cropper = new Cropper(imageToCrop, {
+                viewMode: 1,
+                background: false,
+            });
+        }
+
+        function closeCropModal() {
+            document.getElementById('cropImageModal').classList.remove('show');
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+
+        function applyCrop() {
+            if (!cropper || !selectedImage) return;
+            const canvas = cropper.getCroppedCanvas();
+            if (!canvas) {
+                alert('Không thể cắt ảnh.');
+                return;
+            }
+            // Cập nhật src của ảnh gốc với dữ liệu ảnh đã cắt (base64)
+            selectedImage.src = canvas.toDataURL();
+            closeCropModal();
+            hideImageToolbar();
+        }
+
+        // Thêm sự kiện click toàn trang để ẩn thanh công cụ khi click ra ngoài
+        document.addEventListener('click', function(event) {
+            // Nếu click ra ngoài ảnh và toolbar
+            if (selectedImage && 
+                !selectedImage.contains(event.target) && 
+                !imageToolbar.contains(event.target) &&
+                !event.target.closest('.image-tools-trigger')) {
+                
+                hideImageToolbar();
+            }
+        });
+
+        // Gắn sự kiện click cho tất cả editor
+        const editors = [
+            'quick', 'passage-text', 'passage-sub-questions', 
+            'editQ', 'editExplanation', 'passageEditText', 'passageEditSubQuestions'
+        ];
+
+        editors.forEach(editorId => {
+            const editor = document.getElementById(editorId);
+            if (editor) {
+                editor.addEventListener('click', handleEditorClick);
+            }
+        });
 
         // 🔹 Xóa nội dung input
         function clearSingleInput() {
