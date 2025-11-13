@@ -1763,13 +1763,17 @@
           const menu = document.getElementById('more-options-menu');
           menu.classList.toggle('active');
       }
-
       // Đóng menu khi click ra ngoài
       window.addEventListener('click', function(event) {
           const menu = document.getElementById('more-options-menu');
           const btn = document.getElementById('more-options-btn');
           if (menu && menu.classList.contains('active')) {
               // Kiểm tra xem click có nằm ngoài menu và ngoài nút 3 chấm không
+
+              //Kiểm tra xem click có nằm ngoài menu và ngoài nút 3 chấm không
+              if (!menu.contains(event.target) && !btn.contains(event.target)) {
+                  menu.classList.remove('active');
+              }
               if (!menu.contains(event.target) && !btn.contains(event.target)) {
                   menu.classList.remove('active');
               }
