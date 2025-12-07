@@ -156,6 +156,7 @@
             color: var(--text-color);
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
 
     <body class="preload">
@@ -190,6 +191,14 @@
                 <div class="stat-grid" id="stats-grid-content"
                     style="display: none;">
                     <!-- Dữ liệu sẽ được chèn vào đây bởi JS -->
+                </div>
+            </div>
+
+            <div class="stat-card" id="level-distribution-card"
+                style="display: none;">
+                <h3>Phân bổ câu hỏi theo Level</h3>
+                <div style="width: 100%; max-width: 400px; margin: auto;">
+                    <canvas id="levelPieChart"></canvas>
                 </div>
             </div>
 
@@ -267,6 +276,7 @@
         let allQuestionsData = [];
         let hardestQuestionsList = [];
         let easiestQuestionsList = [];
+        let levelPieChart = null;
 
         document.getElementById('min-attempts').addEventListener('input', () => calculateAndDisplayPerformance(allQuestionsData));
         document.getElementById('tag-filter').addEventListener('change', () => calculateAndDisplayPerformance(allQuestionsData));
@@ -294,6 +304,7 @@
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('stats-grid-content').style.display = 'grid';
                 document.getElementById('performance-analysis').style.display = 'block';
+                document.getElementById('level-distribution-card').style.display = 'block';
 
             } catch (error) {
                 console.error("Lỗi khi tải thống kê:", error);
@@ -362,6 +373,55 @@
                 <div class="stat-item"><div class="icon">⏱️</div><div class="value">${averageTime}s</div><div class="label">TG làm bài TB (câu đơn)</div></div>
             `;
         }
+        
+        function renderLevelPieChart(questions) {
+            const levelCounts = questions.reduce((acc, q) => {
+                const level = q.level || 'Chưa phân loại';
+                acc[level] = (acc[level] || 0) + 1;
+                return acc;
+            }, {});
+
+            const ctx = document.getElementById('levelPieChart').getContext('2d');
+            const labels = Object.keys(levelCounts);
+            const data = Object.values(levelCounts);
+
+            // Mảng màu sắc để biểu đồ đẹp hơn
+            const backgroundColors = [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)',
+                'rgba(255, 159, 64, 0.7)',
+                'rgba(199, 199, 199, 0.7)',
+            ];
+            const borderColors = backgroundColors.map(color => color.replace('0.7', '1'));
+
+            // Hủy biểu đồ cũ nếu tồn tại để vẽ lại
+            if (levelPieChart) {
+                levelPieChart.destroy();
+            }
+
+            levelPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số lượng câu hỏi',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top', },
+                    }
+                }
+            });
+        }
 
         function calculateAndDisplayPerformance(questions) {
             const minAttempts = parseInt(document.getElementById('min-attempts').value) || 1;
@@ -372,6 +432,9 @@
             if (favoriteFilter === 'yes') {
                 filteredByTag = filteredByTag.filter(q => q.isFavorite);
             }
+
+            // Cập nhật lại biểu đồ và thống kê tổng quan dựa trên bộ lọc
+            renderLevelPieChart(filteredByTag);
 
             const questionStats = filteredByTag.map(q => {
                 const attempts = q.attempts || 0;

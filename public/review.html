@@ -531,6 +531,16 @@
           </select>
         </div>
         <div class="settings-group">
+          <label class="custom-checkbox">
+            <input type="checkbox" id="enable-level-filter" /><span>Lọc theo
+              Level:</span>
+          </label>
+          <select id="level-filter" disabled>
+            <option value>Tất cả các Level</option>
+            <!-- Các level sẽ được thêm bằng JS -->
+          </select>
+        </div>
+        <div class="settings-group">
           <label for="max-questions">Nhập số câu hỏi muốn làm (tổng cộng
             có
             <span id="total-questions-count">0</span> câu):</label>
@@ -959,6 +969,10 @@
               document.getElementById('tag-filter').disabled = !e.target.checked;
               updateFilter();
           });
+          document.getElementById('enable-level-filter').addEventListener('change', (e) => {
+              document.getElementById('level-filter').disabled = !e.target.checked;
+              updateFilter();
+          });
           document.getElementById('enable-passage-timer').addEventListener('change', (e) => {
               document.getElementById('passage-timer-minutes').disabled = !e.target.checked;
           });
@@ -999,22 +1013,15 @@
 
       // Hàm lọc câu hỏi và cập nhật UI
       function updateFilter() {
-        // Populate tag filter first if it's empty
-        const tagFilter = document.getElementById("tag-filter");
-        if (tagFilter.options.length <= 1) {
-          const tags = new Set(allQuestions.map((q) => q.tag).filter(Boolean));
-          tags.forEach((tag) => {
-            const option = document.createElement("option");
-            option.value = tag;
-            option.textContent = tag;
-            tagFilter.appendChild(option);
-          });
-        }
+        populateTagFilter(); // Luôn cập nhật danh sách tag
+        populateLevelFilter(); // Luôn cập nhật danh sách level
 
         const enableKeywordFilter = document.getElementById('enable-keyword-filter').checked;
         const enableTagFilter = document.getElementById('enable-tag-filter').checked;
+        const enableLevelFilter = document.getElementById('enable-level-filter').checked;
 
-        const selectedTag = tagFilter.value;
+        const selectedTag = document.getElementById("tag-filter").value;
+        const selectedLevel = document.getElementById("level-filter").value;
         const searchTerm = document
           .getElementById("review-search-input")
           .value.toLowerCase();
@@ -1040,6 +1047,11 @@
         // 1. Lọc theo Tag
         if (enableTagFilter && selectedTag) {
           tempFiltered = tempFiltered.filter((q) => q.tag === selectedTag);
+        }
+
+        // 1.5. Lọc theo Level
+        if (enableLevelFilter && selectedLevel) {
+          tempFiltered = tempFiltered.filter((q) => q.level === selectedLevel);
         }
         // 2. Lọc theo từ khóa tìm kiếm
         if (enableKeywordFilter && searchTerm) {
@@ -1090,6 +1102,44 @@
         filteredCountSpan.innerHTML = `🔍 Tìm thấy <b>${filteredQuestions.length}</b> câu.`;
         totalCountSpan.textContent = filteredQuestions.length;
         maxQuestionsInput.max = filteredQuestions.length;
+      }
+
+      function populateTagFilter() {
+          const tagFilter = document.getElementById('tag-filter');
+          const currentVal = tagFilter.value;
+
+          // Lấy danh sách tag duy nhất từ allQuestions
+          const tags = new Set(allQuestions.map(q => q.tag).filter(Boolean));
+
+          // Xóa các option cũ, giữ lại option đầu tiên
+          tagFilter.innerHTML = '<option value="">Tất cả các Tag</option>';
+
+          tags.forEach(tag => {
+              const option = document.createElement('option');
+              option.value = tag;
+              option.textContent = tag;
+              tagFilter.appendChild(option);
+          });
+          tagFilter.value = currentVal; // Khôi phục lại lựa chọn trước đó nếu có thể
+      }
+
+      function populateLevelFilter() {
+          const levelFilter = document.getElementById('level-filter');
+          const currentVal = levelFilter.value;
+
+          // Lấy danh sách level duy nhất từ allQuestions
+          const levels = new Set(allQuestions.map(q => q.level).filter(Boolean));
+
+          // Xóa các option cũ, giữ lại option đầu tiên
+          levelFilter.innerHTML = '<option value="">Tất cả các Level</option>';
+
+          levels.forEach(level => {
+              const option = document.createElement('option');
+              option.value = level;
+              option.textContent = level;
+              levelFilter.appendChild(option);
+          });
+          levelFilter.value = currentVal; // Khôi phục lại lựa chọn trước đó nếu có thể
       }
 
       function shuffle(arr) {

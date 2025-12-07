@@ -255,6 +255,11 @@
             align-items: center;
             justify-content: center;
         }
+        .table-scroll-container thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1; /* Đảm bảo header nổi trên nội dung khi cuộn */
+        }
         .table-scroll-container {
             overflow-x: auto;
             overflow-y: auto;
@@ -339,6 +344,12 @@
                     <label for="questionTag"><b>Tag (Bộ đề):</b> (ví dụ: JLPT
                         T7/2017)</label>
                     <input type="text" id="questionTag"
+                        placeholder="Áp dụng cho các câu hỏi sắp thêm..."
+                        style="width: 100%;">
+                </div>
+                <div style="margin-top: 10px;">
+                    <label for="questionLevel"><b>Level:</b> (ví dụ: N2, N3)</label>
+                    <input type="text" id="questionLevel"
                         placeholder="Áp dụng cho các câu hỏi sắp thêm..."
                         style="width: 100%;">
                 </div>
@@ -464,6 +475,7 @@
                                 <th style="width: 30px;">⭐</th>
                                 <th>#</th>
                                 <th>Nội dung bài đọc</th>
+                                <th>Level</th>
                                 <th>Tag</th>
                                 <th>Số câu con</th>
                                 <th>Thống kê (Đúng/Lần làm)</th>
@@ -489,7 +501,7 @@
                     style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
                     <input type="checkbox" id="show-favorites-only"
                         onchange="render()"><span>Chỉ hiển thị câu gắn sao</span>
-                </label>
+                </label>                
                 <span
                     style="border-left: 1px solid var(--border-color); margin: 0 10px;"></span>
                 <button onclick="openBulkDeleteModal()" id="bulk-delete-btn"
@@ -513,6 +525,7 @@
                             <th style="width: 30px;">⭐</th>
                             <th>#</th>
                             <th>Câu hỏi</th>
+                            <th>Level</th>
                             <th>Tag</th>
                             <th>正解</th>
                             <th>Thống kê (Đúng/Lần làm)</th>
@@ -588,6 +601,9 @@
                             type="text"
                             id="editTag" />
                         <label for="editExplanation">Giải thích (Tham
+                        <label for="editLevel">Level:</label><input
+                            type="text"
+                            id="editLevel" />
                             khảo):</label>
                         <div id="toolbarExplanation" style="margin-top: 6px">
                             <button type="button"
@@ -619,6 +635,9 @@
                                 đọc:</b></label>
                         <div id="passageEditText" contenteditable="true"
                             style="min-height: 150px; white-space: pre-wrap"></div>
+                        <label for="passageEditLevel"><b>Level:</b></label><input
+                            type="text"
+                            id="passageEditLevel" />
                         <br>
                         <label for="passageEditTag"><b>Tag (Bộ
                                 đề):</b></label><input type="text"
@@ -876,6 +895,7 @@
                         </td>
                         <td><span class="favorite-star ${starClass}" onclick="toggleFavorite(event, ${originalIndex})">${starIcon}</span></td>
                         <td>${displayIndex + 1}</td>
+                        <td>${q.level || ""}</td>
                         <td>
                             <div style="font-weight: bold; color: #005a9e;">[BÀI ĐỌC]</div>
                             <div>${passageSnippet}... (${q.sub_questions.length} câu hỏi)</div>
@@ -892,6 +912,7 @@
                         </td>
                         <td><span class="favorite-star ${starClass}" onclick="toggleFavorite(event, ${originalIndex})">${starIcon}</span></td>
                         <td>${displayIndex + 1}</td>
+                        <td>${q.level || ""}</td>
                         <td>${questionText}</td>
                         <td>${q.tag || ""}</td>
                         <td>${q.choices[q.correct] || ""}</td>
@@ -1087,6 +1108,10 @@
                         <label for="edit-preview-tag-${index}" style="margin-right: 5px;">Tag:</label>
                         <input type="text" id="edit-preview-tag-${index}" value="${q.tag || ''}" style="flex-grow: 1; padding: 3px;">
                     </div>
+                    <div style="display: flex; align-items: center; margin-top: 5px;">
+                        <label for="edit-preview-level-${index}" style="margin-right: 5px;">Level:</label>
+                        <input type="text" id="edit-preview-level-${index}" value="${q.level || ''}" style="flex-grow: 1; padding: 3px;">
+                    </div>
                      <div style="margin-top: 5px;">
                         <label for="edit-preview-explanation-${index}" style="display:block; margin-bottom: 3px;">Giải thích:</label>
                         <textarea id="edit-preview-explanation-${index}" style="width: 100%; font-size: 13px;" rows="2">${q.explanation || ''}</textarea>
@@ -1110,6 +1135,7 @@
                     </ul>
                     ${q.tag ? `<div style="margin-top: 8px; font-style: italic; color: #555;"><b>Tag:</b> ${q.tag}</div>` : ''}
                     ${q.explanation ? `<div style="margin-top: 8px; padding: 5px; background-color: var(--explanation-bg); border-radius: 3px;"><b>Giải thích:</b> ${q.explanation}</div>` : ''}
+                    ${q.level ? `<div style="margin-top: 8px; font-style: italic; color: #555;"><b>Level:</b> ${q.level}</div>` : ''}
                 `;
             }
         }
@@ -1130,6 +1156,7 @@
             q.choices = [0, 1, 2, 3].map(cIndex => document.getElementById(`edit-preview-c-${index}-${cIndex}`).value);
             q.correct = parseInt(document.getElementById(`edit-preview-correct-${index}`).value) - 1;
             q.tag = document.getElementById(`edit-preview-tag-${index}`).value;
+            q.level = document.getElementById(`edit-preview-level-${index}`).value;
             q.explanation = document.getElementById(`edit-preview-explanation-${index}`).value;
 
             const itemDiv = document.getElementById(`preview-item-${index}`);
@@ -1153,8 +1180,9 @@
             if (!html) return alert("Hãy dán nội dung!");
 
             const tag = document.getElementById("questionTag").value.trim();
+            const level = document.getElementById("questionLevel").value.trim();
             const parsed = parseQuestionsFromHTML(html);
-            const newQuestions = parsed.map(q => ({ ...q, type: 'single', tag: tag, attempts: 0, correctAttempts: 0 }));
+            const newQuestions = parsed.map(q => ({ ...q, type: 'single', tag: tag, level: level, attempts: 0, correctAttempts: 0 }));
 
             if (newQuestions.length === 0) {
                 alert("⚠️ Không phân tích được câu hỏi nào!");
@@ -1300,6 +1328,7 @@
             if (!subQuestionsHTML) return alert("Vui lòng nhập các câu hỏi cho bài đọc.");
 
             const sub_questions = parseQuestionsFromHTML(subQuestionsHTML);
+            const level = document.getElementById("questionLevel").value.trim();
 
             if (sub_questions.length === 0) {
                 return alert("Không phân tích được câu hỏi con nào. Vui lòng kiểm tra định dạng.");
@@ -1313,6 +1342,7 @@
                 sub_questions: sub_questions,
                 attempts: 0,
                 tag: tag,
+                level: level,
                 correctAttempts: 0,
                 totalSubQuestions: sub_questions.length, // Thêm tổng số câu hỏi con
             };
@@ -1385,6 +1415,7 @@
                 document.getElementById("passageEditText").innerHTML = q.passage;
                 document.getElementById("passageEditSubQuestions").innerHTML = formatSubQuestionsForEditing(q.sub_questions);
                 document.getElementById("passageEditTag").value = q.tag || "";
+                document.getElementById("passageEditLevel").value = q.level || "";
                 document.getElementById("passageEditModal").classList.add("show");
             } else {
                 document.getElementById("editQ").innerHTML = q.question;
@@ -1394,6 +1425,7 @@
                 document.getElementById("editC4").value = q.choices[3] || "";
                 document.getElementById("editCorrect").value = q.correct + 1;
                 document.getElementById("editTag").value = q.tag || "";
+                document.getElementById("editLevel").value = q.level || "";
                 document.getElementById("editExplanation").innerHTML = q.explanation || "";
                 document.getElementById("editModal").classList.add("show");
             }
@@ -1416,6 +1448,7 @@
             const passageHTML = document.getElementById("passageEditText").innerHTML.trim();
             const subQuestionsHTML = document.getElementById("passageEditSubQuestions").innerHTML.trim();
             const tag = document.getElementById("passageEditTag").value.trim();
+            const level = document.getElementById("passageEditLevel").value.trim();
 
             if (!passageHTML || !subQuestionsHTML) {
                 return alert("Nội dung bài đọc và câu hỏi không được để trống.");
@@ -1431,6 +1464,7 @@
                 sub_questions: sub_questions,
                 totalSubQuestions: sub_questions.length, // Cập nhật lại tổng số câu hỏi con
                 tag: tag,
+                level: level,
                 timestamp: serverTimestamp()
             };
 
@@ -1457,6 +1491,7 @@
                 ],
                 correct: parseInt(document.getElementById("editCorrect").value) - 1,
                 tag: document.getElementById("editTag").value.trim(),
+                level: document.getElementById("editLevel").value.trim(),
                 explanation: document.getElementById("editExplanation").innerHTML.trim(),
                 // Cập nhật lại timestamp
                 timestamp: serverTimestamp()
