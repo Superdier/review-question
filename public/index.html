@@ -341,6 +341,13 @@
                             hỏi)</span></label>
                 </div>
                 <div style="margin-top: 15px;">
+                    <label><b>Loại kiến thức:</b></label>
+                    <label class="custom-radio" style="margin-left: 10px;"><input type="radio" name="inputCategory" value="grammar" checked><span>Ngữ pháp</span></label>
+                    <label class="custom-radio" style="margin-left: 10px;"><input type="radio" name="inputCategory" value="vocabulary"><span>Từ vựng</span></label>
+                    <label class="custom-radio" style="margin-left: 10px;"><input type="radio" name="inputCategory" value="reading"><span>Đọc hiểu</span></label>
+                    <label class="custom-radio" style="margin-left: 10px;"><input type="radio" name="inputCategory" value="kanji"><span>Kanji</span></label>
+                </div>
+                <div style="margin-top: 15px;">
                     <label for="questionTag"><b>Tag (Bộ đề):</b> (ví dụ: JLPT
                         T7/2017)</label>
                     <input type="text" id="questionTag"
@@ -474,9 +481,10 @@
                                 </th>
                                 <th style="width: 30px;">⭐</th>
                                 <th>#</th>
-                                <th>Nội dung bài đọc</th>
                                 <th>Level</th>
+                                <th>Nội dung bài đọc</th>
                                 <th>Tag</th>
+                                <th>Loại</th>
                                 <th>Số câu con</th>
                                 <th>Thống kê (Đúng/Lần làm)</th>
                                 <th>Thao tác</th>
@@ -507,6 +515,16 @@
                 <button onclick="openBulkDeleteModal()" id="bulk-delete-btn"
                     class="btn-danger" style="display: none;">🗑️ Xóa các câu đã
                     chọn</button>
+                <div id="bulk-category-area" style="display: none; align-items: center; gap: 5px;">
+                    <select id="bulk-category-select" style="min-width: 120px; margin: 0;">
+                        <option value="">-- Chọn Loại --</option>
+                        <option value="grammar">Ngữ pháp</option>
+                        <option value="vocabulary">Từ vựng</option>
+                        <option value="reading">Đọc hiểu</option>
+                        <option value="kanji">Kanji</option>
+                    </select>
+                    <button onclick="bulkUpdateCategory()" class="btn-success">🏷️ Phân loại hàng loạt</button>
+                </div>
                 <button onclick="exportJSON()"
                     title="Xuất toàn bộ câu hỏi ra file JSON">💾 Xuất dữ
                     liệu</button>
@@ -524,9 +542,10 @@
                             </th>
                             <th style="width: 30px;">⭐</th>
                             <th>#</th>
-                            <th>Câu hỏi</th>
                             <th>Level</th>
+                            <th>Câu hỏi</th>
                             <th>Tag</th>
+                            <th>Loại</th>
                             <th>正解</th>
                             <th>Thống kê (Đúng/Lần làm)</th>
                             <th>Thao tác</th>
@@ -597,6 +616,13 @@
                         <label>Đúng (1-4):</label><input type="number"
                             id="editCorrect"
                             min="1" max="4" />
+                        <label for="editCategory">Loại kiến thức:</label>
+                        <select id="editCategory" style="width: 100%; margin-bottom: 10px;">
+                            <option value="grammar">Ngữ pháp</option>
+                            <option value="vocabulary">Từ vựng</option>
+                            <option value="reading">Đọc hiểu</option>
+                            <option value="kanji">Kanji</option>
+                        </select>
                         <label for="editTag">Tag (Bộ đề):</label><input
                             type="text"
                             id="editTag" />
@@ -782,6 +808,31 @@
         let tempParsedQuestions = []; // Lưu các câu hỏi đã phân tích tạm thời
         let isMultiSelectMode = false;
         
+        // --- Helper functions for Badges ---
+        function getLevelBadge(level) {
+            if (!level) return "";
+            const lv = level.toUpperCase().trim();
+            let cls = "level-default";
+            if (lv.includes("N1")) cls = "level-n1";
+            else if (lv.includes("N2")) cls = "level-n2";
+            else if (lv.includes("N3")) cls = "level-n3";
+            else if (lv.includes("N4")) cls = "level-n4";
+            else if (lv.includes("N5")) cls = "level-n5";
+            return `<span class="badge-level ${cls}">${lv}</span>`;
+        }
+
+        function getCategoryBadge(category) {
+            const mapping = {
+                'grammar': { text: 'Ngữ pháp', cls: 'cat-grammar' },
+                'vocabulary': { text: 'Từ vựng', cls: 'cat-vocabulary' },
+                'reading': { text: 'Đọc hiểu', cls: 'cat-reading' },
+                'kanji': { text: 'Kanji', cls: 'cat-kanji' }
+            };
+            const cat = category?.toLowerCase();
+            const data = mapping[cat] || { text: category || "N/A", cls: "cat-default" };
+            return `<span class="badge-category ${data.cls}">${data.text}</span>`;
+        }
+
         // Biến cho chức năng "Xem thêm"
         const ITEMS_PER_PAGE = {
             singles: 30,
@@ -823,6 +874,12 @@
             if (!loadMoreType) {
                 displayedCounts.singles = ITEMS_PER_PAGE.singles;
                 displayedCounts.passages = ITEMS_PER_PAGE.passages;
+
+                // Reset trạng thái các checkbox "Chọn tất cả" ở header khi thực hiện tìm kiếm hoặc lọc mới
+                const saq = document.getElementById('select-all-questions');
+                const sap = document.getElementById('select-all-passages');
+                if (saq) { saq.checked = false; saq.indeterminate = false; }
+                if (sap) { sap.checked = false; sap.indeterminate = false; }
             }
 
             // Chỉ render lại bảng được yêu cầu khi "load more"
@@ -837,6 +894,10 @@
             let passages = filteredQuestions.filter(q => q.type === 'passage');
             let singles = filteredQuestions.filter(q => q.type !== 'passage');
 
+            // Xử lý từ khóa tìm kiếm cho bài đọc
+            const isPassageExactPhraseSearch = passageSearchTerm.startsWith('"') && passageSearchTerm.endsWith('"');
+            const actualPassageSearchTerm = isPassageExactPhraseSearch ? passageSearchTerm.slice(1, -1).toLowerCase() : passageSearchTerm;
+
             // Lọc bài đọc bằng ô tìm kiếm riêng
             if (passageSearchTerm) {
                 passages = passages.filter(q => {
@@ -844,14 +905,18 @@
                     let contentToSearch = q.passage || "";
                     if (q.sub_questions) {
                         q.sub_questions.forEach(subQ => {
-                            contentToSearch += " " + (subQ.question || "");
-                            contentToSearch += " " + (subQ.choices ? subQ.choices.join(' ') : "");
-                            contentToSearch += " " + (subQ.explanation || "");
+                            contentToSearch += ` ${subQ.question || ""}`;
+                            contentToSearch += ` ${subQ.choices ? subQ.choices.join(' ') : ""}`;
+                            contentToSearch += ` ${subQ.explanation || ""}`;
                         });
                     }
-                    return contentToSearch.replace(/<[^>]+>/g, "").toLowerCase().includes(passageSearchTerm);
+                    return contentToSearch.replace(/<[^>]+>/g, "").toLowerCase().includes(actualPassageSearchTerm);
                 });
             }
+
+            // Xử lý từ khóa tìm kiếm cho câu hỏi đơn
+            const isSingleExactPhraseSearch = searchTerm.startsWith('"') && searchTerm.endsWith('"');
+            const actualSearchTerm = isSingleExactPhraseSearch ? searchTerm.slice(1, -1).toLowerCase() : searchTerm;
 
             // Lọc câu hỏi đơn bằng ô tìm kiếm chung
             if (searchTerm) {
@@ -861,7 +926,7 @@
                         contentToSearch += " " + (q.choices ? q.choices.join(' ') : "");
                         contentToSearch += " " + (q.tag || "");
                         contentToSearch += " " + (q.explanation || "");
-                    return contentToSearch.replace(/<[^>]+>/g, "").toLowerCase().includes(searchTerm);
+                    return contentToSearch.replace(/<[^>]+>/g, "").toLowerCase().includes(actualSearchTerm);
                 });
             }
 
@@ -895,12 +960,13 @@
                         </td>
                         <td><span class="favorite-star ${starClass}" onclick="toggleFavorite(event, ${originalIndex})">${starIcon}</span></td>
                         <td>${displayIndex + 1}</td>
-                        <td>${q.level || ""}</td>
+                        <td>${getLevelBadge(q.level)}</td>
                         <td>
                             <div style="font-weight: bold; color: #005a9e;">[BÀI ĐỌC]</div>
                             <div>${passageSnippet}... (${q.sub_questions.length} câu hỏi)</div>
                         </td>
                         <td>${q.tag || ""}</td>
+                        <td>${getCategoryBadge(q.category)}</td>
                         <td style="text-align: center;">${q.sub_questions.length}</td>
                         <td style="text-align: center;">${q.correctAttempts || 0}/${totalAttemptedSubQuestions}</td>
                         <td><button onclick="openEdit(${originalIndex})">Sửa</button><button onclick="del(${originalIndex})">Xóa</button></td>`;
@@ -912,9 +978,10 @@
                         </td>
                         <td><span class="favorite-star ${starClass}" onclick="toggleFavorite(event, ${originalIndex})">${starIcon}</span></td>
                         <td>${displayIndex + 1}</td>
-                        <td>${q.level || ""}</td>
+                        <td>${getLevelBadge(q.level)}</td>
                         <td>${questionText}</td>
                         <td>${q.tag || ""}</td>
+                        <td>${getCategoryBadge(q.category)}</td>
                         <td>${q.choices[q.correct] || ""}</td>
                         <td style="text-align: center;">${q.correctAttempts || 0}/${q.attempts || 0}</td>
                         <td><button onclick="openEdit(${originalIndex})">Sửa</button><button onclick="del(${originalIndex})">Xóa</button></td>`;
@@ -1181,8 +1248,9 @@
 
             const tag = document.getElementById("questionTag").value.trim();
             const level = document.getElementById("questionLevel").value.trim();
+            const category = document.querySelector('input[name="inputCategory"]:checked').value;
             const parsed = parseQuestionsFromHTML(html);
-            const newQuestions = parsed.map(q => ({ ...q, type: 'single', tag: tag, level: level, attempts: 0, correctAttempts: 0 }));
+            const newQuestions = parsed.map(q => ({ ...q, type: 'single', category, tag, level, attempts: 0, correctAttempts: 0 }));
 
             if (newQuestions.length === 0) {
                 alert("⚠️ Không phân tích được câu hỏi nào!");
@@ -1329,6 +1397,7 @@
 
             const sub_questions = parseQuestionsFromHTML(subQuestionsHTML);
             const level = document.getElementById("questionLevel").value.trim();
+            const category = document.querySelector('input[name="inputCategory"]:checked').value;
 
             if (sub_questions.length === 0) {
                 return alert("Không phân tích được câu hỏi con nào. Vui lòng kiểm tra định dạng.");
@@ -1338,6 +1407,7 @@
             // Lưu dữ liệu tạm thời để xác nhận
             tempPassageData = {
                 type: 'passage',
+                category: category,
                 passage: passageHTML,
                 sub_questions: sub_questions,
                 attempts: 0,
@@ -1424,6 +1494,7 @@
                 document.getElementById("editC3").value = q.choices[2] || "";
                 document.getElementById("editC4").value = q.choices[3] || "";
                 document.getElementById("editCorrect").value = q.correct + 1;
+                document.getElementById("editCategory").value = q.category || "grammar";
                 document.getElementById("editTag").value = q.tag || "";
                 document.getElementById("editLevel").value = q.level || "";
                 document.getElementById("editExplanation").innerHTML = q.explanation || "";
@@ -1490,6 +1561,7 @@
                     document.getElementById("editC4").value,
                 ],
                 correct: parseInt(document.getElementById("editCorrect").value) - 1,
+                category: document.getElementById("editCategory").value,
                 tag: document.getElementById("editTag").value.trim(),
                 level: document.getElementById("editLevel").value.trim(),
                 explanation: document.getElementById("editExplanation").innerHTML.trim(),
@@ -2080,42 +2152,42 @@
             const singleQuestionCheckboxes = document.querySelectorAll('#single-questions-tbl .question-checkbox');
             const passageCheckboxes = document.querySelectorAll('#passage-questions-tbl .question-checkbox');
 
+            // Sử dụng thuộc tính .onchange thay vì addEventListener để đảm bảo chỉ có một trình xử lý duy nhất, tránh cộng dồn sự kiện
             if (selectAllCheckbox) {
-                selectAllCheckbox.addEventListener('change', (e) => {
+                selectAllCheckbox.onchange = function(e) {
                     singleQuestionCheckboxes.forEach(cb => {
                         cb.checked = e.target.checked;
                     });
                     updateBulkActionUI();
-                });
+                };
             }
             if (selectAllPassagesCheckbox) {
-                selectAllPassagesCheckbox.addEventListener('change', (e) => {
+                selectAllPassagesCheckbox.onchange = function(e) {
                     passageCheckboxes.forEach(cb => {
                         cb.checked = e.target.checked;
                     });
                     updateBulkActionUI();
-                });
+                };
             }
 
-            singleQuestionCheckboxes.forEach(cb => {
-                cb.addEventListener('change', () => {
-                    updateBulkActionUI();
-                });
-            });
+            // Gán sự kiện cho từng checkbox câu hỏi
+            singleQuestionCheckboxes.forEach(cb => cb.onchange = () => updateBulkActionUI());
+            passageCheckboxes.forEach(cb => cb.onchange = () => updateBulkActionUI());
 
-            passageCheckboxes.forEach(cb => {
-                cb.addEventListener('change', () => {
-                    updateBulkActionUI();
-                });
-            });
+            // Cập nhật ngay lập tức giao diện các nút thao tác hàng loạt (Xóa/Phân loại) sau khi render
+            updateBulkActionUI();
         }
 
         function updateBulkActionUI() {
             const selectedCount = document.querySelectorAll('.question-checkbox:checked').length;
             const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+            const bulkCategoryArea = document.getElementById('bulk-category-area');
 
             if (bulkDeleteBtn) {
                 bulkDeleteBtn.style.display = selectedCount > 0 ? 'inline-flex' : 'none';
+            }
+            if (bulkCategoryArea) {
+                bulkCategoryArea.style.display = selectedCount > 0 ? 'inline-flex' : 'none';
             }
 
             // Cập nhật trạng thái cho checkbox "Chọn tất cả" của câu hỏi đơn
@@ -2167,6 +2239,29 @@
 
         function closeBulkDeleteModal() {
             document.getElementById('bulkDeleteConfirmModal').classList.remove('show');
+        }
+
+        async function bulkUpdateCategory() {
+            const selectedCheckboxes = document.querySelectorAll('.question-checkbox:checked');
+            const newCategory = document.getElementById('bulk-category-select').value;
+            
+            if (selectedCheckboxes.length === 0) return;
+            if (!newCategory) return alert("Vui lòng chọn một loại kiến thức để áp dụng!");
+
+            if (confirm(`Bạn có muốn chuyển ${selectedCheckboxes.length} câu đã chọn sang loại "${newCategory}" không?`)) {
+                const batch = db.batch();
+                selectedCheckboxes.forEach(cb => {
+                    batch.update(questionsCollection.doc(cb.value), { category: newCategory });
+                });
+
+                try {
+                    await batch.commit();
+                    alert("✅ Đã cập nhật loại kiến thức thành công!");
+                    await loadQuestions();
+                } catch (error) {
+                    console.error("Lỗi cập nhật hàng loạt:", error);
+                }
+            }
         }
 
         async function confirmBulkDelete(button) {

@@ -17,6 +17,7 @@ try {
     var db = firebase.firestore();
     var serverTimestamp = firebase.firestore.FieldValue.serverTimestamp;
     var questionsCollection = db.collection("questions");
+    var resultsCollection = db.collection("quiz_results");
 } catch (e) {
     console.error("Lỗi khởi tạo Firebase:", e);
     alert("Không thể kết nối đến cơ sở dữ liệu. Vui lòng kiểm tra cấu hình Firebase và kết nối mạng.");

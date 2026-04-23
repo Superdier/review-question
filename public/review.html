@@ -260,6 +260,17 @@
         background-color: var(--explanation-bg);
         border-radius: 4px;
       }
+      .error-tagger {
+        margin-top: 10px;
+        padding: 8px;
+        border: 1px dashed var(--danger-color);
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+      .error-tagger select {
+        min-width: 150px;
+        margin-left: 10px;
+      }
 
       #button-bar {
         margin-top: 20px;
@@ -541,6 +552,18 @@
           </select>
         </div>
         <div class="settings-group">
+          <label class="custom-checkbox">
+            <input type="checkbox" id="enable-category-filter" /><span>Lọc theo Loại kiến thức:</span>
+          </label>
+          <select id="category-filter" disabled>
+            <option value="">Tất cả các loại</option>
+            <option value="grammar">Ngữ pháp</option>
+            <option value="vocabulary">Từ vựng</option>
+            <option value="reading">Đọc hiểu</option>
+            <option value="kanji">Kanji</option>
+          </select>
+        </div>
+        <div class="settings-group">
           <label for="max-questions">Nhập số câu hỏi muốn làm (tổng cộng
             có
             <span id="total-questions-count">0</span> câu):</label>
@@ -748,6 +771,14 @@
           <label for="editCorrect">Đáp án đúng (1-4):</label>
           <input type="number" id="editCorrect" min="1" max="4" />
 
+          <label for="editCategory">Loại kiến thức:</label>
+          <select id="editCategory" style="width: 100%; margin-bottom: 10px;">
+            <option value="grammar">Ngữ pháp</option>
+            <option value="vocabulary">Từ vựng</option>
+            <option value="reading">Đọc hiểu</option>
+            <option value="kanji">Kanji</option>
+          </select>
+
           <label for="editExplanation">Giải thích:</label>
           <div
             id="toolbarEditExplanation"
@@ -810,6 +841,15 @@
               padding: 8px;
               border-radius: 4px;
             "></div>
+          <br />
+
+          <label for="passageEditCategory"><b>Loại kiến thức:</b></label>
+          <select id="passageEditCategory" style="width: 100%; margin-bottom: 10px;">
+            <option value="grammar">Ngữ pháp</option>
+            <option value="vocabulary">Từ vựng</option>
+            <option value="reading">Đọc hiểu</option>
+            <option value="kanji">Kanji</option>
+          </select>
           <br />
 
           <label for="passageEditSubQuestions"><b>Các câu hỏi cho bài
@@ -880,7 +920,9 @@
       let incorrectCount = 0;
       let timerInterval;
       let questionStartTime;
+      let passageStartTime;
       let singleQuestionTimes = [];
+      let passageTimes = [];
 
       let isMultiSelectMode = false;
       // Khôi phục phiên làm bài nếu có
@@ -973,6 +1015,10 @@
               document.getElementById('level-filter').disabled = !e.target.checked;
               updateFilter();
           });
+          document.getElementById('enable-category-filter').addEventListener('change', (e) => {
+              document.getElementById('category-filter').disabled = !e.target.checked;
+              updateFilter();
+          });
           document.getElementById('enable-passage-timer').addEventListener('change', (e) => {
               document.getElementById('passage-timer-minutes').disabled = !e.target.checked;
           });
@@ -1019,9 +1065,11 @@
         const enableKeywordFilter = document.getElementById('enable-keyword-filter').checked;
         const enableTagFilter = document.getElementById('enable-tag-filter').checked;
         const enableLevelFilter = document.getElementById('enable-level-filter').checked;
+        const enableCategoryFilter = document.getElementById('enable-category-filter').checked;
 
         const selectedTag = document.getElementById("tag-filter").value;
         const selectedLevel = document.getElementById("level-filter").value;
+        const selectedCategory = document.getElementById("category-filter").value;
         const searchTerm = document
           .getElementById("review-search-input")
           .value.toLowerCase();
@@ -1053,8 +1101,15 @@
         if (enableLevelFilter && selectedLevel) {
           tempFiltered = tempFiltered.filter((q) => q.level === selectedLevel);
         }
+        // 1.6. Lọc theo Category
+        if (enableCategoryFilter && selectedCategory) {
+          tempFiltered = tempFiltered.filter((q) => q.category === selectedCategory);
+        }
         // 2. Lọc theo từ khóa tìm kiếm
         if (enableKeywordFilter && searchTerm) {
+          const isExactPhraseSearch = searchTerm.startsWith('"') && searchTerm.endsWith('"');
+          const actualSearchTerm = isExactPhraseSearch ? searchTerm.slice(1, -1).toLowerCase() : searchTerm;
+
           tempFiltered = tempFiltered.filter((q) => {
             if (!q) return false;
             let contentToSearch = "";
@@ -1078,7 +1133,7 @@
             return contentToSearch
               .replace(/<[^>]+>/g, "")
               .toLowerCase()
-              .includes(searchTerm);
+              .includes(actualSearchTerm);
           });
         }
         // 3. Lọc các câu đã nắm rõ
@@ -1191,6 +1246,8 @@
           // Hiển thị bài đọc
           passageContentDiv.style.display = "block";
           passageContentDiv.innerHTML = currentQuestion.annotatedPassageContent || currentQuestion.passageContent;
+          // Nếu là câu đầu tiên của bài đọc, ghi nhận thời gian bắt đầu bài đọc
+          if (!passageStartTime) passageStartTime = Date.now();
         }
 
         const quizDiv = document.getElementById("quiz");
@@ -1307,6 +1364,23 @@
           btn.classList.add("wrong");
           all[correct].classList.add("correct");
           incorrectCount++;
+          
+          // Hiển thị bộ phân loại lỗi sai
+          const taggerHtml = `
+            <div class="error-tagger">
+              ⚠️ <b>Phân loại lỗi:</b>
+              <select onchange="tagError('${currentQuestion.id}', this.value)">
+                <option value="">-- Chọn lý do --</option>
+                <option value="vocab">Quên từ vựng/Ngữ pháp</option>
+                <option value="reading_misunderstand">Hiểu nhầm ý (Đọc hiểu)</option>
+                <option value="kanji_confuse">Nhầm mặt chữ Kanji</option>
+                <option value="trap">Bị đáp án "bẫy"</option>
+              </select>
+            </div>`;
+          const quizDiv = document.getElementById("quiz");
+          const taggerContainer = document.createElement('div');
+          taggerContainer.innerHTML = taggerHtml;
+          quizDiv.appendChild(taggerContainer);
         }
         updateScore();
 
@@ -1341,6 +1415,26 @@
             .update(updateData)
             .catch((err) => console.error("Lỗi cập nhật thống kê:", err));
         }
+        
+        // Nếu là câu cuối cùng của một chuỗi bài đọc (hoặc câu tiếp theo không cùng ID bài đọc)
+        // Ở đây đơn giản hóa: nếu câu tiếp theo không cùng ID bài đọc cha, tính thời gian bài đọc.
+        const nextQ = quizQuestions[index + 1];
+        if (currentQuestion.isSubQuestion && (!nextQ || nextQ.id !== currentQuestion.id)) {
+            const pTime = (Date.now() - passageStartTime) / 1000;
+            passageTimes.push(pTime);
+            currentQuestion.passageTimeTaken = pTime;
+            passageStartTime = null; // Reset cho bài đọc tiếp theo
+        }
+      }
+
+      async function tagError(questionId, errorType) {
+        if (!errorType) return;
+        try {
+            const field = `errorAnalysis.${errorType}`;
+            await questionsCollection.doc(questionId).update({
+                [field]: firebase.firestore.FieldValue.increment(1)
+            });
+        } catch (e) { console.error("Lỗi lưu phân loại lỗi:", e); }
       }
 
       function toggleFlag() {
@@ -1420,7 +1514,22 @@
         }
       }
 
-      function showFinalResult() {
+      async function showFinalResult() {
+        // Lưu kết quả phiên vào Firestore
+        const total = quizQuestions.length;
+        const scoreData = {
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            score: correctCount,
+            total: total,
+            accuracy: (correctCount / total) * 100,
+            avgSingleTime: singleQuestionTimes.length > 0 ? (singleQuestionTimes.reduce((a,b)=>a+b,0)/singleQuestionTimes.length) : 0,
+            avgPassageTime: passageTimes.length > 0 ? (passageTimes.reduce((a,b)=>a+b,0)/passageTimes.length) : 0
+        };
+        
+        try {
+            await resultsCollection.add(scoreData);
+        } catch(e) { console.error("Không thể lưu kết quả phiên:", e); }
+
         // Xóa phiên làm bài vì đã hoàn thành
         sessionStorage.removeItem("quizSession");
 
@@ -1599,6 +1708,7 @@
           document.getElementById("editC3").value = q.choices[2] || "";
           document.getElementById("editC4").value = q.choices[3] || "";
           document.getElementById("editCorrect").value = q.correct + 1;
+          document.getElementById("editCategory").value = q.category || "grammar";
           document.getElementById("editExplanation").innerHTML =
             q.explanation || "";
           // Hiển thị modal
@@ -1627,6 +1737,7 @@
             document.getElementById("editC4").value,
           ],
           correct: parseInt(document.getElementById("editCorrect").value) - 1,
+          category: document.getElementById("editCategory").value,
           explanation: document
             .getElementById("editExplanation")
             .innerHTML.trim(),
@@ -1696,6 +1807,7 @@
         const updatedData = {
           passage: passageHTML,
           sub_questions: sub_questions,
+          category: document.getElementById("passageEditCategory").value,
           totalSubQuestions: sub_questions.length,
           timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         };
@@ -1716,6 +1828,7 @@
           // 2. Cập nhật lại tất cả các câu hỏi con của bài đọc này trong phiên quiz hiện tại
           quizQuestions.forEach((q, i) => {
               if (q.id === passageId) {
+                  quizQuestions[i].category = updatedData.category;
                   // Tìm câu hỏi con tương ứng trong dữ liệu mới
                   const newSubQuestion = sub_questions.find(sub => sub.question === q.question);
                   if (newSubQuestion) {
@@ -2013,6 +2126,8 @@
         correctCount = 0;
         incorrectCount = 0;
         singleQuestionTimes = []; // Reset mảng thời gian
+        passageTimes = [];
+        passageStartTime = null;
 
         document.getElementById("quiz-settings").style.display = "none";
         document.getElementById("start-btn").style.display = "none";

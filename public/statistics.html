@@ -155,6 +155,11 @@
             background-color: var(--card-bg);
             color: var(--text-color);
         }
+        .chart-container {
+            width: 100%;
+            margin-top: 20px;
+            padding: 10px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
@@ -182,7 +187,17 @@
 
         <div class="container">
 
-            <h2>📊 Thống kê hiệu quả học tập</h2>
+            <div id="pdf-header" style="display: none; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary-bg); padding-bottom: 10px; margin-bottom: 20px;">
+                <div style="font-size: 24px; font-weight: bold; color: var(--primary-bg); display: flex; align-items: center; gap: 10px;">📚 <span style="border-left: 2px solid #ccc; padding-left: 10px;">Bunpou Master Report</span></div>
+                <div style="font-size: 14px; color: #666; text-align: right;"><b>BÁO CÁO HỌC TẬP</b><br>Ngày xuất: <span id="pdf-current-date"></span></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <h2>📊 Thống kê hiệu quả học tập</h2>
+                <button onclick="exportToPDF()" class="btn-primary" style="margin-bottom: 10px;">
+                    📄 Xuất báo cáo PDF
+                </button>
+            </div>
 
             <div class="stat-card" id="overall-stats">
                 <h3>Tổng quan</h3>
@@ -194,12 +209,30 @@
                 </div>
             </div>
 
+            <div class="stat-card" id="progress-trend-card" style="display: none;">
+                <h3>Biểu đồ tiến độ (Accuracy Trend)</h3>
+                <canvas id="progressLineChart"></canvas>
+            </div>
+
             <div class="stat-card" id="level-distribution-card"
                 style="display: none;">
                 <h3>Phân bổ câu hỏi theo Level</h3>
                 <div style="width: 100%; max-width: 400px; margin: auto;">
                     <canvas id="levelPieChart"></canvas>
                 </div>
+            </div>
+
+            <div class="stat-card" id="category-distribution-card"
+                style="display: none;">
+                <h3>Phân bổ câu hỏi theo Loại kiến thức</h3>
+                <div style="width: 100%; max-width: 400px; margin: auto;">
+                    <canvas id="categoryPieChart"></canvas>
+                </div>
+            </div>
+
+            <div class="stat-card" id="error-analysis-card" style="display: none;">
+                <h3>Phân tích nguyên nhân lỗi sai</h3>
+                <canvas id="errorBarChart"></canvas>
             </div>
 
             <div class="stat-card" id="performance-analysis"
@@ -213,6 +246,14 @@
                     <label for="tag-filter">Lọc theo Tag:</label>
                     <select id="tag-filter">
                         <option value>Tất cả các Tag</option>
+                    </select>
+                    <label for="category-filter">Lọc theo Loại:</label>
+                    <select id="category-filter">
+                        <option value="">Tất cả các loại</option>
+                        <option value="grammar">Ngữ pháp</option>
+                        <option value="vocabulary">Từ vựng</option>
+                        <option value="reading">Đọc hiểu</option>
+                        <option value="kanji">Kanji</option>
                     </select>
                     <label for="favorite-filter">Lọc theo Gắn sao:</label>
                     <select id="favorite-filter">
@@ -265,6 +306,7 @@
 
         </div>
 
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script
             src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
         <script
@@ -277,10 +319,19 @@
         let hardestQuestionsList = [];
         let easiestQuestionsList = [];
         let levelPieChart = null;
+        let categoryPieChart = null;
+        let progressLineChart = null;
+
+        // Hàm cập nhật toàn bộ dữ liệu khi filter thay đổi
+        function updateAllStats() {
+            calculateAndDisplayOverallStats(allQuestionsData);
+            calculateAndDisplayPerformance(allQuestionsData);
+        }
 
         document.getElementById('min-attempts').addEventListener('input', () => calculateAndDisplayPerformance(allQuestionsData));
-        document.getElementById('tag-filter').addEventListener('change', () => calculateAndDisplayPerformance(allQuestionsData));
-        document.getElementById('favorite-filter').addEventListener('change', () => calculateAndDisplayPerformance(allQuestionsData));
+        document.getElementById('tag-filter').addEventListener('change', updateAllStats);
+        document.getElementById('category-filter').addEventListener('change', updateAllStats);
+        document.getElementById('favorite-filter').addEventListener('change', updateAllStats);
         document.getElementById('review-hardest-btn').addEventListener('click', () => startReview(hardestQuestionsList));
         document.getElementById('review-easiest-btn').addEventListener('click', () => startReview(easiestQuestionsList));
         loadStatistics();
@@ -300,11 +351,16 @@
                 populateTagFilter(allQuestionsData);
                 calculateAndDisplayOverallStats(allQuestionsData);
                 calculateAndDisplayPerformance(allQuestionsData);
+                await loadProgressTrend(); // Chờ biểu đồ Progress Trend vẽ xong
+                renderErrorAnalysis(allQuestionsData);
 
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('stats-grid-content').style.display = 'grid';
                 document.getElementById('performance-analysis').style.display = 'block';
                 document.getElementById('level-distribution-card').style.display = 'block';
+                document.getElementById('category-distribution-card').style.display = 'block';
+                document.getElementById('progress-trend-card').style.display = 'block';
+                document.getElementById('error-analysis-card').style.display = 'block';
 
             } catch (error) {
                 console.error("Lỗi khi tải thống kê:", error);
@@ -329,8 +385,14 @@
 
         function calculateAndDisplayOverallStats(questions) {
             const selectedTag = document.getElementById('tag-filter').value;
-            const filteredQuestions = selectedTag ? questions.filter(q => q.tag === selectedTag) : questions;
+            const selectedCategory = document.getElementById('category-filter').value;
+            const favoriteFilter = document.getElementById('favorite-filter').value;
 
+            let filteredQuestions = questions;
+            if (selectedTag) filteredQuestions = filteredQuestions.filter(q => q.tag === selectedTag);
+            if (selectedCategory) filteredQuestions = filteredQuestions.filter(q => q.category === selectedCategory);
+            if (favoriteFilter === 'yes') filteredQuestions = filteredQuestions.filter(q => q.isFavorite);
+            
             const totalQuestions = filteredQuestions.length;
             const singleQuestions = filteredQuestions.filter(q => q.type !== 'passage').length;
             const passageQuestions = totalQuestions - singleQuestions;
@@ -362,18 +424,87 @@
 
             const overallAccuracy = totalPossibleAttempts > 0 ? ((totalCorrect / totalPossibleAttempts) * 100).toFixed(1) : 0;
 
+            // Tỷ lệ đúng theo Kỹ năng (Skills Breakdown)
+            const skills = ['grammar', 'vocabulary', 'reading', 'kanji'];
+            const skillStats = skills.map(s => {
+                const qInSkill = filteredQuestions.filter(q => q.category === s);
+                let correct = 0, total = 0;
+                qInSkill.forEach(q => {
+                    correct += q.correctAttempts || 0;
+                    total += q.type === 'passage' ? (q.attempts||0)*(q.totalSubQuestions||1) : (q.attempts||0);
+                });
+                return { name: s, acc: total > 0 ? (correct/total*100).toFixed(1) : 0 };
+            });
+
+            // Tính thời gian trung bình bài đọc
+            const passageQs = filteredQuestions.filter(q => q.type === 'passage' && q.passageTimeTaken > 0);
+            const avgPassageTime = passageQs.length > 0 ? (passageQs.reduce((a,b)=>a+(b.passageTimeTaken||0), 0) / passageQs.length).toFixed(0) : 0;
+
             const grid = document.getElementById('stats-grid-content');
             grid.innerHTML = `
                 <div class="stat-item"><div class="icon">📚</div><div class="value">${totalQuestions}</div><div class="label">Tổng số câu hỏi</div></div>
-                <div class="stat-item"><div class="icon">📝</div><div class="value">${singleQuestions}</div><div class="label">Câu hỏi đơn</div></div>
-                <div class="stat-item"><div class="icon">📖</div><div class="value">${passageQuestions}</div><div class="label">Bài đọc</div></div>
                 <div class="stat-item"><div class="icon">✍️</div><div class="value">${attemptedQuestions}</div><div class="label">Câu đã làm</div></div>
-                <div class="stat-item"><div class="icon">⭐</div><div class="value">${favoritedQuestions}</div><div class="label">Câu đã gắn sao</div></div>
                 <div class="stat-item"><div class="icon">🎯</div><div class="value">${overallAccuracy}%</div><div class="label">Tỷ lệ đúng chung</div></div>
-                <div class="stat-item"><div class="icon">⏱️</div><div class="value">${averageTime}s</div><div class="label">TG làm bài TB (câu đơn)</div></div>
+                <div class="stat-item"><div class="icon">⏱️</div><div class="value">${averageTime}s</div><div class="label">TB Câu đơn</div></div>
+                <div class="stat-item"><div class="icon">⏲️</div><div class="value">${(avgPassageTime/60).toFixed(1)}m</div><div class="label">TB Bài đọc</div></div>
+                ${skillStats.map(s => `
+                    <div class="stat-item" style="border-top: 2px solid var(--primary-bg)">
+                        <div class="value" style="font-size: 1.2em">${s.acc}%</div>
+                        <div class="label">${s.name.toUpperCase()}</div>
+                    </div>
+                `).join('')}
             `;
         }
         
+        async function loadProgressTrend() {
+            const snapshot = await resultsCollection.orderBy('timestamp', 'asc').limitToLast(20).get();
+            const results = snapshot.docs.map(doc => doc.data());
+            if (results.length === 0) return;
+
+            const ctx = document.getElementById('progressLineChart').getContext('2d');
+            if (progressLineChart) progressLineChart.destroy();
+            
+            progressLineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: results.map((_, i) => `Lần ${i+1}`),
+                    datasets: [{
+                        label: 'Tỷ lệ đúng (%)',
+                        data: results.map(r => r.accuracy),
+                        borderColor: '#007bff',
+                        tension: 0.3,
+                        fill: true,
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)'
+                    }]
+                },
+                options: { scales: { y: { min: 0, max: 100 } } }
+            });
+        }
+
+        function renderErrorAnalysis(questions) {
+            const errors = { vocab: 0, reading_misunderstand: 0, kanji_confuse: 0, trap: 0 };
+            questions.forEach(q => {
+                if (q.errorAnalysis) {
+                    Object.keys(errors).forEach(key => {
+                        errors[key] += (q.errorAnalysis[key] || 0);
+                    });
+                }
+            });
+
+            const ctx = document.getElementById('errorBarChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Quên kiến thức', 'Hiểu nhầm ý', 'Nhầm Kanji', 'Bị bẫy'],
+                    datasets: [{
+                        label: 'Số lỗi ghi nhận',
+                        data: Object.values(errors),
+                        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0']
+                    }]
+                }
+            });
+        }
+
         function renderLevelPieChart(questions) {
             const levelCounts = questions.reduce((acc, q) => {
                 const level = q.level || 'Chưa phân loại';
@@ -423,18 +554,54 @@
             });
         }
 
+        function renderCategoryPieChart(questions) {
+            const categoryMapping = {
+                'grammar': 'Ngữ pháp',
+                'vocabulary': 'Từ vựng',
+                'reading': 'Đọc hiểu',
+                'kanji': 'Kanji'
+            };
+            const counts = questions.reduce((acc, q) => {
+                const cat = categoryMapping[q.category] || 'Chưa phân loại';
+                acc[cat] = (acc[cat] || 0) + 1;
+                return acc;
+            }, {});
+
+            const ctx = document.getElementById('categoryPieChart').getContext('2d');
+            if (categoryPieChart) categoryPieChart.destroy();
+
+            categoryPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: [
+                            '#4bc0c0', '#ff6384', '#36a2eb', '#ffce56', '#9966ff'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+
         function calculateAndDisplayPerformance(questions) {
             const minAttempts = parseInt(document.getElementById('min-attempts').value) || 1;
             const selectedTag = document.getElementById('tag-filter').value;
+            const selectedCategory = document.getElementById('category-filter').value;
             const favoriteFilter = document.getElementById('favorite-filter')?.value; // Thêm '?' để tránh lỗi nếu element không tồn tại
 
-            let filteredByTag = selectedTag ? questions.filter(q => q.tag === selectedTag) : questions;
-            if (favoriteFilter === 'yes') {
-                filteredByTag = filteredByTag.filter(q => q.isFavorite);
-            }
-
+            let filteredByTag = questions;
+            if (selectedTag) filteredByTag = filteredByTag.filter(q => q.tag === selectedTag);
+            if (selectedCategory) filteredByTag = filteredByTag.filter(q => q.category === selectedCategory);
+            if (favoriteFilter === 'yes') filteredByTag = filteredByTag.filter(q => q.isFavorite);
+            
             // Cập nhật lại biểu đồ và thống kê tổng quan dựa trên bộ lọc
             renderLevelPieChart(filteredByTag);
+            renderCategoryPieChart(filteredByTag);
 
             const questionStats = filteredByTag.map(q => {
                 const attempts = q.attempts || 0;
@@ -498,6 +665,63 @@
             const questionIds = questionList.map(q => q.id);
             sessionStorage.setItem('filteredQuestionIds', JSON.stringify(questionIds));
             window.location.href = './review.html';
+        }
+
+        async function exportToPDF() {
+            const btn = event?.target || document.querySelector('button[onclick="exportToPDF()"]');
+            const body = document.body;
+            const wasDarkMode = body.classList.contains('dark-mode');
+            const element = document.querySelector('.container');
+            const pdfHeader = document.getElementById('pdf-header');
+
+            // Vô hiệu hóa nút và đổi text để người dùng biết đang xử lý
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang tạo PDF...'; }
+
+            // 1. Tạm thời chuyển sang Light Mode để capture
+            if (wasDarkMode) body.classList.remove('dark-mode');
+
+            // Hiển thị Header cho PDF và cập nhật ngày giờ hiện tại
+            if (pdfHeader) {
+                pdfHeader.style.display = 'flex';
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('vi-VN');
+                const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('pdf-current-date').textContent = `${dateStr} ${timeStr}`;
+            }
+
+            // Tạm thời đánh dấu ẩn các thành phần không cần thiết trong PDF (nút, bộ lọc)
+            const ignores = element.querySelectorAll('button, .filter-container');
+            ignores.forEach(el => el.setAttribute('data-html2pdf-ignore', 'true'));
+
+            // 2. QUAN TRỌNG: Chờ một chút (800ms) để CSS transitions hoàn tất và biểu đồ Chart.js vẽ lại ổn định
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            const opt = {
+                margin:       [10, 10],
+                filename:     'bao-cao-thong-ke-hoc-tap.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true,
+                    backgroundColor: '#f4f7f9',
+                    scrollY: 0, // Đảm bảo capture từ đầu trang, tránh lỗi lệch vị trí khi đang cuộn
+                    windowWidth: document.documentElement.offsetWidth // Cố định độ rộng để layout không bị vỡ
+                },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                // 3. Thực hiện tạo PDF
+                await html2pdf().set(opt).from(element).save();
+            } catch (err) {
+                console.error("Lỗi xuất PDF:", err);
+                alert("Có lỗi xảy ra khi tạo file PDF.");
+            } finally {
+                // 4. Khôi phục lại trạng thái ban đầu
+                if (wasDarkMode) body.classList.add('dark-mode');
+                if (pdfHeader) pdfHeader.style.display = 'none';
+                if (btn) { btn.disabled = false; btn.textContent = '📄 Xuất báo cáo PDF'; }
+            }
         }
     </script>
     </body>
